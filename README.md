@@ -2,6 +2,10 @@
 
 A WordPress plugin that returns post content in Markdown format when requested with an `Accept` header set to `text/markdown`.
 
+## Requirements
+
+PHP 8.1+
+
 ## Usage
 
 Visit any single post on your site with the `Accept` header set to `text/markdown` to get the post content directly as Markdown.
