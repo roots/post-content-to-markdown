@@ -1,0 +1,50 @@
+name: Build Release
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          tools: composer
+
+      - name: Install dependencies (with dev for build tools)
+        run: composer install --optimize-autoloader
+
+      - name: Build prefixed vendor
+        run: |
+          vendor/bin/php-scoper add-prefix --config=scoper.inc.php --force
+          cd vendor_prefixed && composer dump-autoload
+
+      - name: Remove dev dependencies after build
+        run: |
+          rm -rf vendor
+          composer install --no-dev --optimize-autoloader
+
+      - name: Create release artifact
+        run: |
+          git archive --format=zip --prefix=post-content-to-markdown/ HEAD > /tmp/post-content-to-markdown.zip
+          cd /tmp
+          unzip post-content-to-markdown.zip
+          cp -r $GITHUB_WORKSPACE/vendor_prefixed post-content-to-markdown/
+          zip -r post-content-to-markdown.zip post-content-to-markdown/
+
+      - name: Upload release asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: /tmp/post-content-to-markdown.zip
+          asset_name: post-content-to-markdown.zip
+          asset_content_type: application/zip

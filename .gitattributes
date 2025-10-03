@@ -1,0 +1,8 @@
+.git export-ignore
+.github export-ignore
+.gitignore export-ignore
+.gitattributes export-ignore
+composer.lock export-ignore
+composer.json export-ignore
+scoper.inc.php export-ignore
+vendor export-ignore
