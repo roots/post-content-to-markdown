@@ -82,3 +82,8 @@ add_filter('post_content_to_markdown/markdown_output', function ($markdown, $ori
 **Parameters:**
 - `$markdown`: The converted markdown text
 - `$original_html`: The original HTML content
+
+## Resources
+
+* [Serving Markdown Based on Accept Headers and User Agent Detection](https://benword.com/serving-markdown-based-on-accept-headers-and-user-agent-detection)
+* [The `text/markdown` Media Type](https://www.rfc-editor.org/rfc/rfc7763.html)
