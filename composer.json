@@ -1,7 +1,7 @@
 {
     "name": "roots/post-content-to-markdown",
     "type": "wordpress-plugin",
-    "description": "A plugin that converts post content to Markdown when requested with an `text/markdown` Accept header.",
+    "description": "A WordPress plugin that serves post content as Markdown via Accept headers or query parameters.",
     "license": "MIT",
     "homepage": "https://roots.io/sage/",
     "authors": [
@@ -12,7 +12,7 @@
         }
     ],
     "scripts": {
-        "build": "php-scoper add-prefix --force"
+        "build": "vendor/bin/php-scoper add-prefix --force && cd vendor_prefixed && composer dump-autoload"
     },
     "require": {
         "league/html-to-markdown": "^5.1"

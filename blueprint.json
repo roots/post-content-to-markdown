@@ -1,0 +1,20 @@
+{
+  "$schema": "https://playground.wordpress.net/blueprint-schema.json",
+  "landingPage": "/",
+  "preferredVersions": {
+    "php": "latest",
+    "wp": "latest"
+  },
+  "steps": [
+    {
+      "step": "setSiteOptions",
+      "options": {
+        "permalink_structure": "/%postname%/"
+      }
+    },
+    {
+      "step": "activatePlugin",
+      "pluginPath": "post-content-to-markdown/post-content-to-markdown.php"
+    }
+  ]
+}

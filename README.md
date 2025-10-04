@@ -1,6 +1,6 @@
 # Post Content to Markdown
 
-A WordPress plugin that returns post content in Markdown format when requested with an `Accept` header set to `text/markdown`.
+A WordPress plugin that returns post content in Markdown format when requested with an `Accept` header set to `text/markdown` or a `?format=markdown` query parameter.
 
 ## Requirements
 
@@ -8,21 +8,51 @@ PHP 8.1+
 
 ## Usage
 
-### Single posts
+### Accept headers (ideal for LLMs)
 
-Visit any single post on your site with the `Accept` header set to `text/markdown` to get the post content directly as Markdown.
+Send an `Accept: text/markdown` header to any of these URLs:
 
-**Example:**
+- **Single post:** `https://example.com/post-slug/` → Returns post content as Markdown
+- **Single post with comments:** `https://example.com/post-slug/feed/` → Returns post + all comments
+- **Main feed:** `https://example.com/feed/` → Returns latest posts as Markdown
+
+**Examples:**
 
 ```bash
-curl -H "Accept: text/markdown" https://example.com/my-awesome-post
+# Single post
+curl -H "Accept: text/markdown" https://example.com/my-awesome-post/
+
+# Single post with comments
+curl -H "Accept: text/markdown" https://example.com/my-awesome-post/feed/
+
+# Main feed
+curl -H "Accept: text/markdown" https://example.com/feed/
 ```
 
-### Markdown feed
+### Query parameters (accessible/shareable)
 
-Access a feed of your posts in Markdown format at `/feed/markdown/`:
+For browsers and sharing, use the `?format=markdown` query parameter:
 
-**Example:**
+- **Single post:** `https://example.com/post-slug/?format=markdown`
+- **Single post with comments:** `https://example.com/post-slug/feed/?format=markdown`
+- **Main feed:** `https://example.com/feed/?format=markdown`
+
+**Examples:**
+
+```bash
+# View in browser
+https://example.com/my-awesome-post/?format=markdown
+
+# Get post with comments
+https://example.com/my-awesome-post/feed/?format=markdown
+
+# Get main feed
+https://example.com/feed/?format=markdown
+```
+
+### Dedicated Markdown feed
+
+A dedicated Markdown feed is also available at `/feed/markdown/`:
 
 ```bash
 curl https://example.com/feed/markdown/
@@ -62,7 +92,12 @@ Welcome to WordPress. This is your first post. Edit or delete it, then start wri
 
 **Feed URL structure:**
 
-The Markdown feed is accessible at `https://yoursite.com/feed/markdown/`. Note that WordPress requires pretty permalinks to be enabled (Settings → Permalinks must be set to anything other than "Plain").
+Markdown feeds are accessible via:
+- `/feed/markdown/` - Dedicated Markdown feed
+- `/feed/?format=markdown` or `/feed/` with `Accept: text/markdown` - Main feed as Markdown
+- `/post-slug/feed/?format=markdown` or `/post-slug/feed/` with `Accept: text/markdown` - Single post with comments
+
+Note that WordPress requires pretty permalinks to be enabled (Settings → Permalinks must be set to anything other than "Plain").
 
 **Autodiscovery:**
 
@@ -212,6 +247,7 @@ add_filter('post_content_to_markdown/markdown_output', function ($markdown, $ori
 The Markdown feed is cached for 1 hour by default to optimize performance. The cache is automatically cleared when:
 - A post is published or updated
 - A post is deleted
+- Comments are added, edited, or deleted (when comments are included in feed)
 
 You can customize the cache duration using the `post_content_to_markdown/feed_cache_duration` filter.
 
