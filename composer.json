@@ -12,7 +12,7 @@
         }
     ],
     "scripts": {
-        "build": "php-scoper add-prefix --force"
+        "build": "vendor/bin/php-scoper add-prefix --force && cd vendor_prefixed && composer dump-autoload"
     },
     "require": {
         "league/html-to-markdown": "^5.1"

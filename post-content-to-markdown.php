@@ -2,7 +2,7 @@
 
 /**
  * Plugin Name: Post Content to Markdown
- * Description: Exposes post content as Markdown via HTTP `Accept` headers.
+ * Description: Serve post content as Markdown via Accept headers or query parameters.
  * Version: 1.2.0
  * Author: roots.io
  */

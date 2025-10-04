@@ -15,10 +15,6 @@
     {
       "step": "activatePlugin",
       "pluginPath": "post-content-to-markdown/post-content-to-markdown.php"
-    },
-    {
-      "step": "runPHP",
-      "code": "<?php flush_rewrite_rules(); ?>"
     }
   ]
 }
