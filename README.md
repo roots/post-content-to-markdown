@@ -6,6 +6,20 @@ A WordPress plugin that returns post content in Markdown format when requested w
 
 PHP 8.1+
 
+## Installation
+
+### via Composer
+
+```bash
+composer require roots/post-content-to-markdown
+```
+
+### Manual
+
+1. Download the [latest release](https://github.com/roots/post-content-to-markdown/releases)
+2. Place in `wp-content/plugins/post-content-to-markdown/`
+3. Activate via wp-admin or WP-CLI
+
 ## Usage
 
 ### Accept headers (ideal for LLMs)
@@ -106,22 +120,6 @@ The plugin automatically adds a `<atom:link>` element to your site's RSS feed, a
 ```xml
 <atom:link href="https://example.com/feed/markdown/" rel="alternate" type="text/markdown" />
 ```
-
-## Installation
-
-### via Composer
-
-```bash
-composer require roots/post-content-to-markdown
-```
-
-### Manual
-
-1. Download the [latest release](https://github.com/roots/post-content-to-markdown/releases)
-2. Place in `wp-content/plugins/post-content-to-markdown/`
-3. Activate via wp-admin or WP-CLI
-
-**Note:** After activation, you may need to flush rewrite rules by visiting Settings → Permalinks and clicking "Save Changes" if the `/feed/markdown/` endpoint doesn't work immediately.
 
 ## Filters
 

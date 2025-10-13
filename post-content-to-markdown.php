@@ -5,6 +5,7 @@
  * Description: Serve post content as Markdown via Accept headers or query parameters.
  * Version: 1.2.0
  * Author: roots.io
+ * Requires PHP: 8.1
  */
 
 namespace PostContentToMarkdown;

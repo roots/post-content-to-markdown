@@ -28,12 +28,14 @@ jobs:
       - name: Install composer dependencies
         run: composer install --optimize-autoloader
 
+      - name: Execute the Composer lint script
+        run: composer run-script lint
+
       - name: Build prefixed vendor
         run: composer run build
 
       - name: Install wp-playground CLI
         run: npm install -g @wp-playground/cli
-
 
       - name: Start wp-playground with blueprint
         run: |
@@ -61,72 +63,8 @@ jobs:
           # Wait for WordPress to be ready
           sleep 10
 
-      - name: Test single post markdown output
-        run: |
-          echo "Testing single post with ?format=markdown"
-
-          # Check if server is responding
-          echo "Checking server status..."
-          curl -v "http://localhost:9400/" || echo "Server not responding"
-
-          echo "Testing markdown endpoint..."
-          response=$(curl -s "http://localhost:9400/hello-world/?format=markdown")
-          echo "Response received: $response"
-
-          if [[ "$response" == *"# Hello world"* ]] && [[ "$response" == *"WordPress"* ]]; then
-            echo "✅ Single post markdown query parameter test passed"
-          else
-            echo "❌ Single post markdown query parameter test failed"
-            exit 1
-          fi
-
-      - name: Test single post with Accept header
-        run: |
-          echo "Testing single post with Accept: text/markdown header"
-          response=$(curl -s -H "Accept: text/markdown" "http://localhost:9400/hello-world/")
-
-          if [[ "$response" == *"# Hello world"* ]] && [[ "$response" == *"WordPress"* ]]; then
-            echo "✅ Single post Accept header test passed"
-          else
-            echo "❌ Single post Accept header test failed"
-            exit 1
-          fi
-
-      - name: Test main feed markdown
-        run: |
-          echo "Testing main feed with ?format=markdown"
-          response=$(curl -s "http://localhost:9400/feed/?format=markdown")
-
-          if [[ "$response" == *"Markdown Feed"* ]] && [[ "$response" == *"Hello world"* ]]; then
-            echo "✅ Main feed markdown test passed"
-          else
-            echo "❌ Main feed markdown test failed"
-            exit 1
-          fi
-
-      - name: Test dedicated markdown feed
-        run: |
-          echo "Testing dedicated /feed/markdown/ endpoint"
-          response=$(curl -s "http://localhost:9400/feed/markdown/")
-
-          if [[ "$response" == *"Markdown Feed"* ]] && [[ "$response" == *"Hello world"* ]]; then
-            echo "✅ Dedicated markdown feed test passed"
-          else
-            echo "❌ Dedicated markdown feed test failed"
-            exit 1
-          fi
-
-      - name: Test content type headers
-        run: |
-          echo "Testing Content-Type headers"
-          content_type=$(curl -s -I "http://localhost:9400/hello-world/?format=markdown" | grep -i "content-type")
-
-          if [[ "$content_type" == *"text/markdown"* ]]; then
-            echo "✅ Content-Type header test passed"
-          else
-            echo "❌ Content-Type header test failed"
-            exit 1
-          fi
+      - name: Run Pest tests
+        run: composer run test
 
       - name: Cleanup
         if: always()

@@ -1,0 +1,7 @@
+{
+  "name": "post-content-to-markdown",
+  "private": true,
+  "scripts": {
+    "playground": "npx @wp-playground/cli server --mount=\"$(pwd):/wordpress/wp-content/plugins/post-content-to-markdown\" --blueprint=blueprint.json"
+  }
+}
