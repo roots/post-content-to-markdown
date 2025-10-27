@@ -15,12 +15,14 @@ if (! defined('ABSPATH')) {
 }
 
 // Load the appropriate autoloader
-if (file_exists(__DIR__.'/vendor/autoload.php')) {
-    // Composer installation
-    require_once __DIR__.'/vendor/autoload.php';
-} else {
-    // Standalone plugin with prefixed dependencies
-    require_once __DIR__.'/vendor_prefixed/vendor/autoload.php';
+if (!class_exists('\League\HTMLToMarkdown\HtmlConverter')) {
+    if (file_exists(__DIR__.'/vendor/autoload.php')) {
+        // Composer installation
+        require_once __DIR__.'/vendor/autoload.php';
+    } elseif (file_exists(__DIR__.'/vendor_prefixed/vendor/autoload.php')) {
+        // Standalone plugin with prefixed dependencies
+        require_once __DIR__.'/vendor_prefixed/vendor/autoload.php';
+    }
 }
 
 /**
