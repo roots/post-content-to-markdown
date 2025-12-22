@@ -15,7 +15,7 @@ if (! defined('ABSPATH')) {
 }
 
 // Load the appropriate autoloader
-if (!class_exists('\League\HTMLToMarkdown\HtmlConverter')) {
+if (! class_exists('\League\HTMLToMarkdown\HtmlConverter')) {
     if (file_exists(__DIR__.'/vendor/autoload.php')) {
         // Composer installation
         require_once __DIR__.'/vendor/autoload.php';
@@ -42,6 +42,16 @@ function isMarkdownRequested()
 
     return false;
 }
+
+/**
+ * Tell caching plugins (WP Super Cache, etc.) to skip caching for markdown requests.
+ * This runs early to ensure the constant is set before caching plugins check it.
+ */
+add_action('plugins_loaded', function () {
+    if (isMarkdownRequested() && ! defined('DONOTCACHEPAGE')) {
+        define('DONOTCACHEPAGE', true);
+    }
+});
 
 /**
  * Serve content as Markdown based on Accept header or query parameter
