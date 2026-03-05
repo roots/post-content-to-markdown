@@ -254,5 +254,5 @@ You can customize the cache duration using the `post_content_to_markdown/feed_ca
 
 ## Resources
 
-* [Serving Markdown Based on Accept Headers and User Agent Detection](https://benword.com/serving-markdown-based-on-accept-headers-and-user-agent-detection)
+* [Serving Markdown to AI Agents via Accept Headers](https://benword.com/serving-markdown-to-ai-agents-via-accept-headers)
 * [The `text/markdown` Media Type](https://www.rfc-editor.org/rfc/rfc7763.html)
