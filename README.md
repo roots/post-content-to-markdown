@@ -1,10 +1,19 @@
 # Post Content to Markdown
 
+[![Packagist Downloads](https://img.shields.io/packagist/dt/roots/post-content-to-markdown?label=downloads&colorB=2b3072&colorA=525ddc&style=flat-square)](https://packagist.org/packages/roots/post-content-to-markdown)
+[![Follow Roots](https://img.shields.io/badge/follow%20@rootswp-1da1f2?logo=twitter&logoColor=ffffff&message=&style=flat-square)](https://twitter.com/rootswp)
+[![Sponsor Roots](https://img.shields.io/badge/sponsor%20roots-525ddc?logo=github&style=flat-square&logoColor=ffffff&message=)](https://github.com/sponsors/roots)
+
 A WordPress plugin that returns post content in Markdown format when requested with an `Accept` header set to `text/markdown` or a `?format=markdown` query parameter.
 
 | Query parameter | Accept header |
 |-------------|---------------|
 | ![Screenshot of the plugin output on WP's default Hello World post](https://cdn.roots.io/app/uploads/post-content-to-markdown-hello-world.png?2) | ![Screenshot of the plugin output on WP's default Hello World post (Accept header)](https://cdn.roots.io/app/uploads/post-content-to-markdown-hello-world-curl.png) |
+
+## Support us
+
+We're dedicated to pushing modern WordPress development forward through our open source projects, and we need your support to keep building. You can support our work by purchasing [Radicle](https://roots.io/radicle/), our recommended WordPress stack, or by [sponsoring us on GitHub](https://github.com/sponsors/roots). Every contribution directly helps us create better tools for the WordPress ecosystem.
+
 ## Requirements
 
 PHP 8.1+
@@ -256,3 +265,13 @@ You can customize the cache duration using the `post_content_to_markdown/feed_ca
 
 * [Serving Markdown to AI Agents via Accept Headers](https://benword.com/serving-markdown-to-ai-agents-via-accept-headers)
 * [The `text/markdown` Media Type](https://www.rfc-editor.org/rfc/rfc7763.html)
+
+## Community
+
+Keep track of development and community news.
+
+- Join us on Discord by [sponsoring us on GitHub](https://github.com/sponsors/roots)
+- Join us on [Roots Discourse](https://discourse.roots.io/)
+- Follow [@rootswp on Twitter](https://twitter.com/rootswp)
+- Follow the [Roots Blog](https://roots.io/blog/)
+- Subscribe to the [Roots Newsletter](https://roots.io/subscribe/)
