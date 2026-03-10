@@ -66,6 +66,9 @@ jobs:
       - name: Run Pest tests
         run: composer run test
 
+      - name: Run Pint
+        run: vendor/bin/pint --test
+
       - name: Cleanup
         if: always()
         run: |
