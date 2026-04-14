@@ -3,7 +3,7 @@
 /**
  * Plugin Name: Post Content to Markdown
  * Description: Serve post content as Markdown via Accept headers or query parameters.
- * Version: 1.3.0
+ * Version: 1.3.1
  * Author: roots.io
  * Requires PHP: 8.1
  */
@@ -367,6 +367,13 @@ function contentToMarkdown($content)
     // Render dynamic Gutenberg blocks and shortcodes so the HTML is complete before conversion.
     $content = do_blocks($content);
     $content = do_shortcode($content);
+
+    // Flatten <pre> blocks so syntax-highlighter markup doesn't leak into the code fence.
+    $content = preg_replace_callback('#<pre\b[^>]*>(.*?)</pre>#is', function ($m) {
+        $inner = html_entity_decode(strip_tags($m[1]), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+        return '<pre><code>'.htmlspecialchars($inner, ENT_QUOTES | ENT_HTML5, 'UTF-8').'</code></pre>';
+    }, $content);
 
     $default_options = [
         'header_style' => 'atx',
