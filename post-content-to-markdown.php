@@ -3,7 +3,7 @@
 /**
  * Plugin Name: Post Content to Markdown
  * Description: Serve post content as Markdown via Accept headers or query parameters.
- * Version: 1.2.2
+ * Version: 1.3.0
  * Author: roots.io
  * Requires PHP: 8.1
  */
@@ -364,6 +364,10 @@ function contentToMarkdown($content)
         return '';
     }
 
+    // Render dynamic Gutenberg blocks and shortcodes so the HTML is complete before conversion.
+    $content = do_blocks($content);
+    $content = do_shortcode($content);
+
     $default_options = [
         'header_style' => 'atx',
         'strip_tags' => true,  // Remove HTML tags without Markdown equivalents
@@ -373,12 +377,20 @@ function contentToMarkdown($content)
 
     $options = apply_filters('post_content_to_markdown/converter_options', $default_options);
 
-    // Determine which HtmlConverter class to use based on what's available
+    // Determine which HtmlConverter / TableConverter classes to use based on what's available
     if (class_exists('\League\HTMLToMarkdown\HtmlConverter')) {
         $converter = new \League\HTMLToMarkdown\HtmlConverter($options);
+        $table_converter_class = '\League\HTMLToMarkdown\Converter\TableConverter';
     } else {
         $converter = new \PostContentToMarkdown\Vendor\League\HTMLToMarkdown\HtmlConverter($options);
+        $table_converter_class = '\PostContentToMarkdown\Vendor\League\HTMLToMarkdown\Converter\TableConverter';
     }
+
+    // league/html-to-markdown ships a TableConverter but doesn't register it by default.
+    if (class_exists($table_converter_class)) {
+        $converter->getEnvironment()->addConverter(new $table_converter_class);
+    }
+
     $markdown = $converter->convert($content);
 
     // Clean up excessive newlines (more than 2 consecutive)
