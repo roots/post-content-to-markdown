@@ -3,7 +3,7 @@
 /**
  * Plugin Name: Post Content to Markdown
  * Description: Serve post content as Markdown via Accept headers or query parameters.
- * Version: 1.3.1
+ * Version: 1.4.0
  * Author: roots.io
  * Requires PHP: 8.1
  */
@@ -85,6 +85,10 @@ add_action('template_redirect', function () {
 
         $allowed_post_types = apply_filters('post_content_to_markdown/post_types', ['post']);
         if (in_array($post->post_type, $allowed_post_types, true)) {
+            if (! apply_filters('post_content_to_markdown/post_allowed', true, $post)) {
+                return;
+            }
+
             header('Content-Type: text/markdown; charset='.get_option('blog_charset'));
             echo '# '.strip_tags($post->post_title)."\n\n".contentToMarkdown($post->post_content);
             exit;

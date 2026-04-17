@@ -152,6 +152,35 @@ add_filter('post_content_to_markdown/post_types', function ($post_types) {
 
 **Default:** `['post']`
 
+#### `post_content_to_markdown/post_allowed`
+
+Filter whether a specific post is allowed to be served as Markdown. Runs after the post type check, so it only receives posts whose type is already allowed. Returning `false` short-circuits the Markdown response and falls through to the normal HTML render.
+
+```php
+add_filter('post_content_to_markdown/post_allowed', function ($allowed, $post) {
+    // Only serve Markdown for specific page slugs
+    if ($post->post_type === 'page') {
+        return in_array($post->post_name, ['example', 'example-2'], true);
+    }
+
+    return $allowed;
+}, 10, 2);
+```
+
+Or restrict by post ID:
+
+```php
+add_filter('post_content_to_markdown/post_allowed', function ($allowed, $post) {
+    if ($post->post_type === 'page') {
+        return in_array($post->ID, [1, 2, 3], true);
+    }
+
+    return $allowed;
+}, 10, 2);
+```
+
+**Default:** `true`
+
 ### Feed filters
 
 #### `post_content_to_markdown/feed_post_types`
