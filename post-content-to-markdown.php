@@ -3,7 +3,7 @@
 /**
  * Plugin Name: Post Content to Markdown
  * Description: Serve post content as Markdown via Accept headers, .md URL suffix, or query parameters.
- * Version: 1.6.0
+ * Version: 1.7.0
  * Author: roots.io
  * Requires PHP: 8.1
  */
@@ -107,6 +107,34 @@ function isMarkdownRequested()
 }
 
 /**
+ * Identify how the client asked for Markdown: md-url (URL suffix), query
+ * (?format=markdown), or accept (Accept header). Emitted as X-Markdown-Source
+ * so ops can see the negotiation mix in access logs.
+ */
+function markdownSource()
+{
+    if (isMdUrlRequest()) {
+        return 'md-url';
+    }
+
+    if (isset($_GET['format']) && $_GET['format'] === 'markdown') {
+        return 'query';
+    }
+
+    return 'accept';
+}
+
+/**
+ * Send the response headers common to every Markdown output path.
+ */
+function sendMarkdownHeaders()
+{
+    header('Content-Type: text/markdown; charset='.get_option('blog_charset'));
+    header('Vary: Accept', false);
+    header('X-Markdown-Source: '.markdownSource(), false);
+}
+
+/**
  * Whether the client's Accept header allows any representation we can serve
  * (text/html or text/markdown). A .md URL suffix is always acceptable since
  * the URL itself is the preference signal. Missing Accept counts as
@@ -173,13 +201,22 @@ add_action('plugins_loaded', function () {
 }, 0);
 
 /**
- * Tell caching plugins (WP Super Cache, etc.) to skip caching for markdown requests.
- * This runs early to ensure the constant is set before caching plugins check it.
+ * Tell caching plugins (WP Super Cache, etc.) to skip caching for same-URL
+ * Accept-header negotiation, where the cache key wouldn't distinguish the
+ * Markdown and HTML representations. .md URL requests are a distinct URL
+ * and safely cacheable, but WP page caches may transform the body assuming
+ * HTML (gzip, footer injection), so the opt-in stays off by default.
  */
 add_action('plugins_loaded', function () {
-    if (isMarkdownRequested() && ! defined('DONOTCACHEPAGE')) {
-        define('DONOTCACHEPAGE', true);
+    if (! isMarkdownRequested() || defined('DONOTCACHEPAGE')) {
+        return;
     }
+
+    if (isMdUrlRequest() && apply_filters('post_content_to_markdown/cache_md_urls', false)) {
+        return;
+    }
+
+    define('DONOTCACHEPAGE', true);
 });
 
 /**
@@ -213,6 +250,64 @@ add_action('send_headers', function () {
     }
 
     header('Vary: Accept', false);
+});
+
+/**
+ * Return the .md URL for the current singular post if the plugin would serve
+ * a Markdown representation, or null when no alternate exists or should be
+ * advertised (admin, Markdown response, disallowed post, filter disabled).
+ */
+function currentMdAlternateUrl()
+{
+    if (is_admin() || isMarkdownRequested() || ! is_singular()) {
+        return null;
+    }
+
+    if (! apply_filters('post_content_to_markdown/md_url_enabled', true)) {
+        return null;
+    }
+
+    $post = get_queried_object();
+    if (! $post || ! is_a($post, 'WP_Post')) {
+        return null;
+    }
+
+    $allowed = apply_filters('post_content_to_markdown/post_types', ['post']);
+    if (! in_array($post->post_type, $allowed, true)) {
+        return null;
+    }
+
+    if (! apply_filters('post_content_to_markdown/post_allowed', true, $post)) {
+        return null;
+    }
+
+    return rtrim(get_permalink($post), '/').'.md';
+}
+
+/**
+ * Advertise the .md sibling on HTML responses so RFC 8288-aware crawlers can
+ * discover the Markdown representation without sending Accept: text/markdown.
+ */
+add_action('template_redirect', function () {
+    $md_url = currentMdAlternateUrl();
+    if ($md_url === null) {
+        return;
+    }
+
+    header('Link: <'.esc_url_raw($md_url).'>; rel="alternate"; type="text/markdown"', false);
+});
+
+/**
+ * Also advertise the .md sibling inside <head> so HTML-parsing clients
+ * (browsers, feed readers) discover it alongside the HTTP Link header.
+ */
+add_action('wp_head', function () {
+    $md_url = currentMdAlternateUrl();
+    if ($md_url === null) {
+        return;
+    }
+
+    echo '<link rel="alternate" type="text/markdown" href="'.esc_url($md_url).'">'."\n";
 });
 
 /**
@@ -276,8 +371,7 @@ add_action('template_redirect', function () {
                 return;
             }
 
-            header('Content-Type: text/markdown; charset='.get_option('blog_charset'));
-            header('Vary: Accept', false);
+            sendMarkdownHeaders();
             echo '# '.strip_tags($post->post_title)."\n\n".contentToMarkdown($post->post_content);
             exit;
         }
@@ -299,8 +393,7 @@ function outputMarkdownFeed()
 
     $cached_feed = get_transient($cache_key);
     if ($cached_feed !== false) {
-        header('Content-Type: text/markdown; charset='.get_option('blog_charset'));
-        header('Vary: Accept', false);
+        sendMarkdownHeaders();
         echo $cached_feed;
         exit;
     }
@@ -392,8 +485,7 @@ function outputMarkdownFeed()
     // Cache for 1 hour
     set_transient($cache_key, $feed_content, apply_filters('post_content_to_markdown/feed_cache_duration', HOUR_IN_SECONDS));
 
-    header('Content-Type: text/markdown; charset='.get_option('blog_charset'));
-    header('Vary: Accept', false);
+    sendMarkdownHeaders();
     echo $feed_content;
     exit;
 }
@@ -403,8 +495,7 @@ function outputMarkdownFeed()
  */
 function outputSinglePostCommentFeed($post)
 {
-    header('Content-Type: text/markdown; charset='.get_option('blog_charset'));
-    header('Vary: Accept', false);
+    sendMarkdownHeaders();
 
     echo '# '.strip_tags($post->post_title)."\n\n";
 
@@ -559,6 +650,12 @@ function contentToMarkdown($content)
         return '';
     }
 
+    $cache_key = 'md_'.md5($content);
+    $cached = wp_cache_get($cache_key, 'post_content_to_markdown');
+    if ($cached !== false) {
+        return $cached;
+    }
+
     // Render dynamic Gutenberg blocks and shortcodes so the HTML is complete before conversion.
     $content = do_blocks($content);
     $content = do_shortcode($content);
@@ -598,5 +695,9 @@ function contentToMarkdown($content)
     // Clean up excessive newlines (more than 2 consecutive)
     $markdown = preg_replace("/\n{3,}/", "\n\n", $markdown);
 
-    return apply_filters('post_content_to_markdown/markdown_output', $markdown, $content);
+    $markdown = apply_filters('post_content_to_markdown/markdown_output', $markdown, $content);
+
+    wp_cache_set($cache_key, $markdown, 'post_content_to_markdown', HOUR_IN_SECONDS);
+
+    return $markdown;
 }

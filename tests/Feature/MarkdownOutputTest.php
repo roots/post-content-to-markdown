@@ -160,3 +160,39 @@ test('.md URL for a non-existent page returns 404', function () {
 
     expect($response['status'])->toBe(404);
 });
+
+test('HTML response advertises the .md alternate via a Link header', function () {
+    $response = makeRequest('/hello-world/');
+
+    expect($response['headers'])->toHaveKey('link')
+        ->and($response['headers']['link'])->toContain('rel="alternate"')
+        ->and($response['headers']['link'])->toContain('type="text/markdown"');
+});
+
+test('HTML head includes a <link rel="alternate" type="text/markdown">', function () {
+    $response = makeRequest('/hello-world/');
+
+    expect($response['body'])->toContain('rel="alternate"')
+        ->and($response['body'])->toContain('type="text/markdown"')
+        ->and($response['body'])->toContain('href="');
+});
+
+test('markdown via Accept reports X-Markdown-Source: accept', function () {
+    $response = makeRequest('/hello-world/', [
+        'Accept' => 'text/markdown',
+    ]);
+
+    expect($response['headers']['x-markdown-source'] ?? '')->toBe('accept');
+});
+
+test('markdown via .md URL reports X-Markdown-Source: md-url', function () {
+    $response = makeRequest('/hello-world.md');
+
+    expect($response['headers']['x-markdown-source'] ?? '')->toBe('md-url');
+});
+
+test('markdown via query parameter reports X-Markdown-Source: query', function () {
+    $response = makeRequest('/hello-world/?format=markdown');
+
+    expect($response['headers']['x-markdown-source'] ?? '')->toBe('query');
+});
