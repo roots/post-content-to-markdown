@@ -92,6 +92,22 @@ function isMarkdownRequested()
 }
 
 /**
+ * Whether the client's Accept header allows any representation we can serve
+ * (text/html or text/markdown). Missing Accept counts as acceptable per
+ * RFC 9110 (absence means any type is acceptable).
+ */
+function isAcceptable()
+{
+    $accept = $_SERVER['HTTP_ACCEPT'] ?? '';
+    if ($accept === '') {
+        return true;
+    }
+
+    return acceptQuality($accept, 'text', 'html') > 0.0
+        || acceptQuality($accept, 'text', 'markdown') > 0.0;
+}
+
+/**
  * Tell caching plugins (WP Super Cache, etc.) to skip caching for markdown requests.
  * This runs early to ensure the constant is set before caching plugins check it.
  */
@@ -117,6 +133,31 @@ add_action('send_headers', function () {
 
     header('Vary: Accept', false);
 });
+
+/**
+ * Return 406 Not Acceptable when the client's Accept header rules out every
+ * representation we can serve. Disable via the strict_accept filter to fall
+ * back to HTML instead.
+ */
+add_action('template_redirect', function () {
+    if (is_feed() || is_admin()) {
+        return;
+    }
+
+    if (! apply_filters('post_content_to_markdown/strict_accept', true)) {
+        return;
+    }
+
+    if (isAcceptable()) {
+        return;
+    }
+
+    status_header(406);
+    header('Content-Type: text/plain; charset=utf-8');
+    header('Vary: Accept', false);
+    echo "406 Not Acceptable\n\nAvailable representations: text/html, text/markdown\n";
+    exit;
+}, 1);
 
 /**
  * Serve content as Markdown based on Accept header or query parameter

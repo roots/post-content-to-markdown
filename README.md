@@ -181,6 +181,16 @@ add_filter('post_content_to_markdown/post_allowed', function ($allowed, $post) {
 
 **Default:** `true`
 
+#### `post_content_to_markdown/strict_accept`
+
+Controls whether the plugin returns `406 Not Acceptable` when the client's `Accept` header rules out every representation the site can serve (i.e. neither `text/html` nor `text/markdown` is acceptable). Enabled by default for spec-correct content negotiation. Disable if you'd rather always fall back to HTML for any `Accept` value.
+
+```php
+add_filter('post_content_to_markdown/strict_accept', '__return_false');
+```
+
+**Default:** `true`
+
 #### `post_content_to_markdown/emit_vary`
 
 Controls whether the plugin appends `Vary: Accept` to every front-end response. Enabled by default so that downstream caches (browsers, proxies, CDNs) key on the Accept header and don't cross-serve an HTML response to a Markdown request (or vice versa). Disable if you don't want the plugin touching HTML response headers — Markdown responses will still include `Vary: Accept` regardless, so content negotiation stays correct for direct Markdown hits.
