@@ -87,6 +87,24 @@ curl https://example.com/my-awesome-post.md
 
 `.md` URL responses include `X-Robots-Tag: noindex, nofollow` so search engines don't index the Markdown alias alongside the canonical HTML page. Disable this feature with the `post_content_to_markdown/md_url_enabled` filter.
 
+HTML responses advertise the Markdown representation two ways so both RFC 8288-aware crawlers and HTML-parsing clients can discover it without sending `Accept: text/markdown`:
+
+```
+Link: <https://example.com/my-awesome-post.md>; rel="alternate"; type="text/markdown"
+```
+
+```html
+<link rel="alternate" type="text/markdown" href="https://example.com/my-awesome-post.md">
+```
+
+### Response headers
+
+Markdown responses carry:
+
+- `Content-Type: text/markdown; charset=utf-8`
+- `Vary: Accept` — tells caches to key by `Accept` so the HTML and Markdown representations don't cross-serve.
+- `X-Markdown-Source: accept | md-url | query` — identifies how the client asked for Markdown. Useful for inspecting agent traffic in access logs.
+
 ### Dedicated Markdown feed
 
 A dedicated Markdown feed is also available at `/feed/markdown/`:
@@ -222,6 +240,16 @@ add_filter('post_content_to_markdown/emit_vary', '__return_false');
 
 **Default:** `true`
 
+#### `post_content_to_markdown/cache_md_urls`
+
+By default the plugin sets `DONOTCACHEPAGE` for every Markdown request so WordPress page caches (WP Super Cache, Batcache, etc.) don't cross-serve a Markdown body to an HTML client. `.md` URLs are a distinct URL key and safe to cache in principle, but WP page caches can transform response bodies assuming HTML (gzip, footer injection, cache-comment insertion), so caching them is opt-in. Enable if your page cache passes non-HTML bodies through untouched.
+
+```php
+add_filter('post_content_to_markdown/cache_md_urls', '__return_true');
+```
+
+**Default:** `false`
+
 ### Feed filters
 
 #### `post_content_to_markdown/feed_post_types`
@@ -324,12 +352,18 @@ add_filter('post_content_to_markdown/markdown_output', function ($markdown, $ori
 
 ## Performance
 
-The Markdown feed is cached for 1 hour by default to optimize performance. The cache is automatically cleared when:
+The HTML → Markdown conversion is cached at the object-cache layer (`wp_cache_get` / `wp_cache_set`) keyed on a content hash. Sites with a persistent object cache like Redis or Memcached avoid re-running block rendering, shortcode expansion, and the `league/html-to-markdown` conversion on repeat hits. Cache entries expire after an hour; content changes produce a new hash and a fresh entry, so no explicit invalidation is needed.
+
+The Markdown feed is cached for 1 hour by default via a transient. The cache is automatically cleared when:
 - A post is published or updated
 - A post is deleted
 - Comments are added, edited, or deleted (when comments are included in feed)
 
 You can customize the cache duration using the `post_content_to_markdown/feed_cache_duration` filter.
+
+## CDN configuration
+
+Most WordPress sites don't cache HTML at the CDN (WordPress is dynamic by default), in which case `Vary: Accept` has no practical cost. If you do cache HTML at the edge, `Vary: Accept` will fragment cache entries per user-agent `Accept` string (Chrome, Safari, agent UAs all send different values). Normalize `Accept` at the edge to two buckets — "wants Markdown" and "anything else" — before it reaches origin, then cache each bucket separately. On Cloudflare, a Cache Rule with a custom cache key that includes a normalized `Accept` header handles this; Cloudflare's [Markdown for Agents](https://blog.cloudflare.com/markdown-for-agents/) feature automates the normalization on supported zones.
 
 ## Resources
 
