@@ -3,7 +3,7 @@
 /**
  * Plugin Name: Post Content to Markdown
  * Description: Serve post content as Markdown via Accept headers or query parameters.
- * Version: 1.4.0
+ * Version: 1.5.0
  * Author: roots.io
  * Requires PHP: 8.1
  */
@@ -26,21 +26,69 @@ if (! class_exists('\League\HTMLToMarkdown\HtmlConverter')) {
 }
 
 /**
- * Check if Markdown format is requested via Accept header or query parameter
+ * Return the q-value for a media type in an Accept header, picking the q of
+ * the most specific matching entry (exact > type/* > *\/*) per RFC 9110.
+ */
+function acceptQuality($accept, $type, $subtype)
+{
+    $best = 0.0;
+    $bestSpecificity = -1;
+
+    foreach (explode(',', $accept) as $entry) {
+        $entry = trim($entry);
+        if ($entry === '') {
+            continue;
+        }
+
+        $parts = explode(';', $entry);
+        [$t, $s] = array_pad(explode('/', strtolower(trim(array_shift($parts))), 2), 2, '');
+
+        $specificity = match (true) {
+            $t === $type && $s === $subtype => 2,
+            $t === $type && $s === '*' => 1,
+            $t === '*' && $s === '*' => 0,
+            default => -1,
+        };
+        if ($specificity < 0) {
+            continue;
+        }
+
+        $q = 1.0;
+        foreach ($parts as $param) {
+            $param = trim($param);
+            if (stripos($param, 'q=') === 0) {
+                $q = (float) substr($param, 2);
+            }
+        }
+
+        if ($specificity > $bestSpecificity || ($specificity === $bestSpecificity && $q > $best)) {
+            $best = $q;
+            $bestSpecificity = $specificity;
+        }
+    }
+
+    return $best;
+}
+
+/**
+ * Check if Markdown is preferred over HTML via Accept header q-values,
+ * or requested explicitly via ?format=markdown.
  */
 function isMarkdownRequested()
 {
-    // Check Accept header
-    if (isset($_SERVER['HTTP_ACCEPT']) && str_contains($_SERVER['HTTP_ACCEPT'], 'text/markdown')) {
-        return true;
-    }
-
-    // Check query parameter
     if (isset($_GET['format']) && $_GET['format'] === 'markdown') {
         return true;
     }
 
-    return false;
+    $accept = $_SERVER['HTTP_ACCEPT'] ?? '';
+    if ($accept === '') {
+        return false;
+    }
+
+    $markdown = acceptQuality($accept, 'text', 'markdown');
+    $html = acceptQuality($accept, 'text', 'html');
+
+    return $markdown > 0.0 && $markdown > $html;
 }
 
 /**
@@ -51,6 +99,23 @@ add_action('plugins_loaded', function () {
     if (isMarkdownRequested() && ! defined('DONOTCACHEPAGE')) {
         define('DONOTCACHEPAGE', true);
     }
+});
+
+/**
+ * Advertise that responses vary by Accept header so caches key on it. Applied to
+ * every front-end response (not just Markdown) so an HTML response cached first
+ * can't be served to a later Markdown request for the same URL.
+ */
+add_action('send_headers', function () {
+    if (is_admin()) {
+        return;
+    }
+
+    if (! apply_filters('post_content_to_markdown/emit_vary', true)) {
+        return;
+    }
+
+    header('Vary: Accept', false);
 });
 
 /**
@@ -90,6 +155,7 @@ add_action('template_redirect', function () {
             }
 
             header('Content-Type: text/markdown; charset='.get_option('blog_charset'));
+            header('Vary: Accept', false);
             echo '# '.strip_tags($post->post_title)."\n\n".contentToMarkdown($post->post_content);
             exit;
         }
@@ -112,6 +178,7 @@ function outputMarkdownFeed()
     $cached_feed = get_transient($cache_key);
     if ($cached_feed !== false) {
         header('Content-Type: text/markdown; charset='.get_option('blog_charset'));
+        header('Vary: Accept', false);
         echo $cached_feed;
         exit;
     }
@@ -204,6 +271,7 @@ function outputMarkdownFeed()
     set_transient($cache_key, $feed_content, apply_filters('post_content_to_markdown/feed_cache_duration', HOUR_IN_SECONDS));
 
     header('Content-Type: text/markdown; charset='.get_option('blog_charset'));
+    header('Vary: Accept', false);
     echo $feed_content;
     exit;
 }
@@ -214,6 +282,7 @@ function outputMarkdownFeed()
 function outputSinglePostCommentFeed($post)
 {
     header('Content-Type: text/markdown; charset='.get_option('blog_charset'));
+    header('Vary: Accept', false);
 
     echo '# '.strip_tags($post->post_title)."\n\n";
 
