@@ -314,6 +314,18 @@ add_filter('post_content_to_markdown/feed_cache_duration', function ($duration) 
 
 ### Conversion filters
 
+#### `post_content_to_markdown/conversion_cache_duration`
+
+Filter the cache duration for the HTML → Markdown conversion result in seconds. The conversion is memoized per content hash in the object cache; shorten this TTL if your content renders dynamically (e.g. dynamic blocks, request-aware shortcodes) and you want fresher output.
+
+```php
+add_filter('post_content_to_markdown/conversion_cache_duration', function ($duration) {
+    return 5 * MINUTE_IN_SECONDS;
+});
+```
+
+**Default:** `HOUR_IN_SECONDS` (1 hour)
+
 #### `post_content_to_markdown/converter_options`
 
 Filter the HTML to Markdown converter options.
@@ -352,7 +364,9 @@ add_filter('post_content_to_markdown/markdown_output', function ($markdown, $ori
 
 ## Performance
 
-The HTML → Markdown conversion is cached at the object-cache layer (`wp_cache_get` / `wp_cache_set`) keyed on a content hash. Sites with a persistent object cache like Redis or Memcached avoid re-running block rendering, shortcode expansion, and the `league/html-to-markdown` conversion on repeat hits. Cache entries expire after an hour; content changes produce a new hash and a fresh entry, so no explicit invalidation is needed.
+The HTML → Markdown conversion is cached at the object-cache layer (`wp_cache_get` / `wp_cache_set`) keyed on a content hash. Sites with a persistent object cache like Redis or Memcached avoid re-running block rendering, shortcode expansion, and the `league/html-to-markdown` conversion on repeat hits. Cache entries expire after an hour (filterable via `post_content_to_markdown/conversion_cache_duration`); content changes produce a new hash and a fresh entry, so no explicit invalidation is needed.
+
+The cache assumes that rendering the same post content produces the same output. If you use dynamic blocks or shortcodes whose output varies by request context (e.g. current user, current time, site option that changes mid-TTL), the first render is frozen for the TTL window. Shorten the TTL via the filter above for content where that matters. The `post_content_to_markdown/markdown_output` filter runs on every request (after the cache lookup), so per-request customization there works without fighting the cache.
 
 The Markdown feed is cached for 1 hour by default via a transient. The cache is automatically cleared when:
 - A post is published or updated

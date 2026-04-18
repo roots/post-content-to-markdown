@@ -3,7 +3,7 @@
 /**
  * Plugin Name: Post Content to Markdown
  * Description: Serve post content as Markdown via Accept headers, .md URL suffix, or query parameters.
- * Version: 1.7.0
+ * Version: 1.7.1
  * Author: roots.io
  * Requires PHP: 8.1
  */
@@ -653,19 +653,19 @@ function contentToMarkdown($content)
     $cache_key = 'md_'.md5($content);
     $cached = wp_cache_get($cache_key, 'post_content_to_markdown');
     if ($cached !== false) {
-        return $cached;
+        return apply_filters('post_content_to_markdown/markdown_output', $cached, $content);
     }
 
     // Render dynamic Gutenberg blocks and shortcodes so the HTML is complete before conversion.
-    $content = do_blocks($content);
-    $content = do_shortcode($content);
+    $rendered = do_blocks($content);
+    $rendered = do_shortcode($rendered);
 
     // Flatten <pre> blocks so syntax-highlighter markup doesn't leak into the code fence.
-    $content = preg_replace_callback('#<pre\b[^>]*>(.*?)</pre>#is', function ($m) {
+    $rendered = preg_replace_callback('#<pre\b[^>]*>(.*?)</pre>#is', function ($m) {
         $inner = html_entity_decode(strip_tags($m[1]), ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
         return '<pre><code>'.htmlspecialchars($inner, ENT_QUOTES | ENT_HTML5, 'UTF-8').'</code></pre>';
-    }, $content);
+    }, $rendered);
 
     $default_options = [
         'header_style' => 'atx',
@@ -690,14 +690,17 @@ function contentToMarkdown($content)
         $converter->getEnvironment()->addConverter(new $table_converter_class);
     }
 
-    $markdown = $converter->convert($content);
+    $markdown = $converter->convert($rendered);
 
     // Clean up excessive newlines (more than 2 consecutive)
     $markdown = preg_replace("/\n{3,}/", "\n\n", $markdown);
 
-    $markdown = apply_filters('post_content_to_markdown/markdown_output', $markdown, $content);
+    wp_cache_set(
+        $cache_key,
+        $markdown,
+        'post_content_to_markdown',
+        apply_filters('post_content_to_markdown/conversion_cache_duration', HOUR_IN_SECONDS)
+    );
 
-    wp_cache_set($cache_key, $markdown, 'post_content_to_markdown', HOUR_IN_SECONDS);
-
-    return $markdown;
+    return apply_filters('post_content_to_markdown/markdown_output', $markdown, $content);
 }
