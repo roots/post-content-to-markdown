@@ -3,7 +3,7 @@
 /**
  * Plugin Name: Post Content to Markdown
  * Description: Serve post content as Markdown via Accept headers or query parameters.
- * Version: 1.5.0
+ * Version: 1.6.0
  * Author: roots.io
  * Requires PHP: 8.1
  */
@@ -71,11 +71,26 @@ function acceptQuality($accept, $type, $subtype)
 }
 
 /**
+ * Whether the current request reached the site via a `.md` URL suffix
+ * (e.g. /about.md). Internally rewritten to the underlying URL during
+ * plugins_loaded; this flag preserves the Markdown-preferred signal for
+ * later hooks.
+ */
+function isMdUrlRequest()
+{
+    return ! empty($GLOBALS['post_content_to_markdown_md_url']);
+}
+
+/**
  * Check if Markdown is preferred over HTML via Accept header q-values,
- * or requested explicitly via ?format=markdown.
+ * a .md URL suffix, or the ?format=markdown query parameter.
  */
 function isMarkdownRequested()
 {
+    if (isMdUrlRequest()) {
+        return true;
+    }
+
     if (isset($_GET['format']) && $_GET['format'] === 'markdown') {
         return true;
     }
@@ -93,11 +108,16 @@ function isMarkdownRequested()
 
 /**
  * Whether the client's Accept header allows any representation we can serve
- * (text/html or text/markdown). Missing Accept counts as acceptable per
- * RFC 9110 (absence means any type is acceptable).
+ * (text/html or text/markdown). A .md URL suffix is always acceptable since
+ * the URL itself is the preference signal. Missing Accept counts as
+ * acceptable per RFC 9110 (absence means any type is acceptable).
  */
 function isAcceptable()
 {
+    if (isMdUrlRequest()) {
+        return true;
+    }
+
     $accept = $_SERVER['HTTP_ACCEPT'] ?? '';
     if ($accept === '') {
         return true;
@@ -108,6 +128,51 @@ function isAcceptable()
 }
 
 /**
+ * Detect a .md URL suffix (e.g. /about.md) and internally rewrite REQUEST_URI
+ * to the underlying URL so existing WP and custom routing matches as usual.
+ * The URL the client hit is preserved in the address bar; this rewrite only
+ * affects server-side lookup. A flag is set so isMarkdownRequested() and
+ * isAcceptable() know the request explicitly asked for Markdown.
+ */
+add_action('plugins_loaded', function () {
+    if (! apply_filters('post_content_to_markdown/md_url_enabled', true)) {
+        return;
+    }
+
+    $uri = $_SERVER['REQUEST_URI'] ?? '';
+    $parts = explode('?', $uri, 2);
+    $path = $parts[0];
+    $query = isset($parts[1]) ? '?'.$parts[1] : '';
+
+    if (! preg_match('#\.md$#', $path)) {
+        return;
+    }
+
+    // rest_url() depends on $wp_rewrite which isn't ready at plugins_loaded
+    // priority 0, so build the REST path from home_url() + rest_get_url_prefix().
+    $home_path = rtrim((string) wp_parse_url(home_url('/'), PHP_URL_PATH), '/').'/';
+    $skip_prefixes = array_filter([
+        wp_parse_url(admin_url(), PHP_URL_PATH),
+        $home_path.rest_get_url_prefix().'/',
+        wp_parse_url(wp_login_url(), PHP_URL_PATH),
+        wp_parse_url(home_url('xmlrpc.php'), PHP_URL_PATH),
+    ]);
+    foreach ($skip_prefixes as $skip) {
+        if (str_starts_with($path, $skip)) {
+            return;
+        }
+    }
+
+    $stripped = substr($path, 0, -3);
+    if ($stripped === '' || ! str_ends_with($stripped, '/')) {
+        $stripped .= '/';
+    }
+
+    $_SERVER['REQUEST_URI'] = $stripped.$query;
+    $GLOBALS['post_content_to_markdown_md_url'] = true;
+}, 0);
+
+/**
  * Tell caching plugins (WP Super Cache, etc.) to skip caching for markdown requests.
  * This runs early to ensure the constant is set before caching plugins check it.
  */
@@ -115,6 +180,22 @@ add_action('plugins_loaded', function () {
     if (isMarkdownRequested() && ! defined('DONOTCACHEPAGE')) {
         define('DONOTCACHEPAGE', true);
     }
+});
+
+/**
+ * Add X-Robots-Tag: noindex, nofollow to .md URL responses so search engines
+ * don't index the Markdown alias alongside the canonical HTML page.
+ */
+add_action('send_headers', function () {
+    if (is_admin()) {
+        return;
+    }
+
+    if (! isMdUrlRequest()) {
+        return;
+    }
+
+    header('X-Robots-Tag: noindex, nofollow', false);
 });
 
 /**
