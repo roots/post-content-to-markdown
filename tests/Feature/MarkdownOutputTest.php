@@ -106,3 +106,57 @@ test('markdown response advertises Vary: Accept', function () {
     expect($response['headers'])->toHaveKey('vary')
         ->and($response['headers']['vary'])->toContain('Accept');
 });
+
+test('.md URL suffix serves markdown', function () {
+    $response = makeRequest('/hello-world.md');
+
+    expect($response['status'])->toBe(200)
+        ->and($response['headers']['content-type'])->toContain('text/markdown')
+        ->and($response['body'])->toContain('# Hello world');
+});
+
+test('.md URL response carries X-Robots-Tag: noindex, nofollow', function () {
+    $response = makeRequest('/hello-world.md');
+
+    expect($response['headers'])->toHaveKey('x-robots-tag')
+        ->and($response['headers']['x-robots-tag'])->toContain('noindex');
+});
+
+test('regular URL response does not carry noindex from this plugin', function () {
+    $response = makeRequest('/hello-world/');
+
+    expect($response['headers']['x-robots-tag'] ?? '')->not->toContain('noindex');
+});
+
+test('.md URL overrides Accept header so the shared URL wins', function () {
+    $response = makeRequest('/hello-world.md', [
+        'Accept' => 'text/html',
+    ]);
+
+    expect($response['status'])->toBe(200)
+        ->and($response['headers']['content-type'])->toContain('text/markdown');
+});
+
+test('.md suffix on REST paths is ignored (skipped)', function () {
+    $response = makeRequest('/wp-json/wp/v2/posts.md');
+
+    expect($response['headers']['content-type'] ?? '')->not->toContain('text/markdown');
+});
+
+test('.md suffix on wp-admin paths is ignored (skipped)', function () {
+    $response = makeRequest('/wp-admin/index.php.md');
+
+    expect($response['headers']['content-type'] ?? '')->not->toContain('text/markdown');
+});
+
+test('.md suffix on wp-login.php is ignored (skipped)', function () {
+    $response = makeRequest('/wp-login.php.md');
+
+    expect($response['headers']['content-type'] ?? '')->not->toContain('text/markdown');
+});
+
+test('.md URL for a non-existent page returns 404', function () {
+    $response = makeRequest('/does-not-exist.md');
+
+    expect($response['status'])->toBe(404);
+});

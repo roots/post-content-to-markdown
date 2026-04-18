@@ -76,6 +76,17 @@ https://example.com/my-awesome-post/feed/?format=markdown
 https://example.com/feed/?format=markdown
 ```
 
+### `.md` URL suffix
+
+Appending `.md` to any permalink returns the same Markdown representation and is a first-class, shareable URL.
+
+```bash
+# Equivalent to Accept: text/markdown
+curl https://example.com/my-awesome-post.md
+```
+
+`.md` URL responses include `X-Robots-Tag: noindex, nofollow` so search engines don't index the Markdown alias alongside the canonical HTML page. Disable this feature with the `post_content_to_markdown/md_url_enabled` filter.
+
 ### Dedicated Markdown feed
 
 A dedicated Markdown feed is also available at `/feed/markdown/`:
@@ -177,6 +188,16 @@ add_filter('post_content_to_markdown/post_allowed', function ($allowed, $post) {
 
     return $allowed;
 }, 10, 2);
+```
+
+**Default:** `true`
+
+#### `post_content_to_markdown/md_url_enabled`
+
+Controls whether `.md` URL suffixes (e.g. `/about.md`) are treated as a Markdown request. Enabled by default so consumers get shareable Markdown URLs automatically. Disable if you'd rather only accept Markdown requests via the `Accept` header or `?format=markdown` query parameter.
+
+```php
+add_filter('post_content_to_markdown/md_url_enabled', '__return_false');
 ```
 
 **Default:** `true`
