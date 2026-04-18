@@ -4,9 +4,9 @@
 [![Follow Roots](https://img.shields.io/badge/follow%20@rootswp-1da1f2?logo=twitter&logoColor=ffffff&message=&style=flat-square)](https://twitter.com/rootswp)
 [![Sponsor Roots](https://img.shields.io/badge/sponsor%20roots-525ddc?logo=github&style=flat-square&logoColor=ffffff&message=)](https://github.com/sponsors/roots)
 
-A WordPress plugin that returns post content in Markdown format when requested with an `Accept` header set to `text/markdown` or a `?format=markdown` query parameter.
+A WordPress plugin that returns post content in Markdown format when requested with an `Accept` header set to `text/markdown`, a `.md` URL suffix (e.g. `/hello-world.md`), or a `?format=markdown` query parameter.
 
-| Query parameter | Accept header |
+| Query parameter / `.md` URL | Accept header |
 |-------------|---------------|
 | ![Screenshot of the plugin output on WP's default Hello World post](https://cdn.roots.io/app/uploads/post-content-to-markdown-hello-world.png?2) | ![Screenshot of the plugin output on WP's default Hello World post (Accept header)](https://cdn.roots.io/app/uploads/post-content-to-markdown-hello-world-curl.png) |
 
