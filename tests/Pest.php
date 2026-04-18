@@ -22,13 +22,24 @@ function makeRequest(string $path, array $headers = []): array
     $context = stream_context_create($context_options);
     $response = @file_get_contents($url, false, $context);
 
-    // Parse response headers
+    // Parse status line and response headers. Repeated headers (e.g. Vary) are
+    // concatenated with ", " so assertions can inspect the combined value.
+    $status = 0;
     $responseHeaders = [];
     if (isset($http_response_header)) {
         foreach ($http_response_header as $header) {
+            if (preg_match('#^HTTP/\S+\s+(\d{3})#', $header, $m)) {
+                $status = (int) $m[1];
+
+                continue;
+            }
             if (str_contains($header, ':')) {
                 [$key, $value] = explode(':', $header, 2);
-                $responseHeaders[strtolower(trim($key))] = trim($value);
+                $key = strtolower(trim($key));
+                $value = trim($value);
+                $responseHeaders[$key] = isset($responseHeaders[$key])
+                    ? $responseHeaders[$key].', '.$value
+                    : $value;
             }
         }
     }
@@ -36,5 +47,6 @@ function makeRequest(string $path, array $headers = []): array
     return [
         'body' => $response !== false ? $response : '',
         'headers' => $responseHeaders,
+        'status' => $status,
     ];
 }
