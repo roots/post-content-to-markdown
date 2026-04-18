@@ -2,7 +2,7 @@
 
 /**
  * Plugin Name: Post Content to Markdown
- * Description: Serve post content as Markdown via Accept headers or query parameters.
+ * Description: Serve post content as Markdown via Accept headers, .md URL suffix, or query parameters.
  * Version: 1.6.0
  * Author: roots.io
  * Requires PHP: 8.1
