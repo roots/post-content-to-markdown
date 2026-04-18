@@ -122,6 +122,12 @@ test('.md URL response carries X-Robots-Tag: noindex, nofollow', function () {
         ->and($response['headers']['x-robots-tag'])->toContain('noindex');
 });
 
+test('regular URL response does not carry noindex from this plugin', function () {
+    $response = makeRequest('/hello-world/');
+
+    expect($response['headers']['x-robots-tag'] ?? '')->not->toContain('noindex');
+});
+
 test('.md URL overrides Accept header so the shared URL wins', function () {
     $response = makeRequest('/hello-world.md', [
         'Accept' => 'text/html',
