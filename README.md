@@ -378,10 +378,6 @@ The Markdown feed is cached for 1 hour by default via a transient. The cache is 
 
 You can customize the cache duration using the `post_content_to_markdown/feed_cache_duration` filter.
 
-## CDN configuration
-
-Most WordPress sites don't cache HTML at the CDN (WordPress is dynamic by default), in which case `Vary: Accept` has no practical cost. If you do cache HTML at the edge, `Vary: Accept` will fragment cache entries per user-agent `Accept` string (Chrome, Safari, agent UAs all send different values). Normalize `Accept` at the edge to two buckets — "wants Markdown" and "anything else" — before it reaches origin, then cache each bucket separately. On Cloudflare, a Cache Rule with a custom cache key that includes a normalized `Accept` header handles this; Cloudflare's [Markdown for Agents](https://blog.cloudflare.com/markdown-for-agents/) feature automates the normalization on supported zones.
-
 ## Resources
 
 * [acceptmarkdown.com](https://acceptmarkdown.com/) — serving Markdown to agents via content negotiation, plus a readiness check for your site
