@@ -16,3 +16,4 @@ jobs:
         discourse-category: 14
         discourse-tags:
           releases
+          markdown
