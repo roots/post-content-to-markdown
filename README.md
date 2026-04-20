@@ -384,8 +384,11 @@ Most WordPress sites don't cache HTML at the CDN (WordPress is dynamic by defaul
 
 ## Resources
 
-* [Serving Markdown to AI Agents via Accept Headers](https://benword.com/serving-markdown-to-ai-agents-via-accept-headers)
-* [The `text/markdown` Media Type](https://www.rfc-editor.org/rfc/rfc7763.html)
+* [acceptmarkdown.com](https://acceptmarkdown.com/) — serving Markdown to agents via content negotiation, plus a readiness check for your site
+* [RFC 9110 §12.5.1 — Proactive Negotiation](https://www.rfc-editor.org/rfc/rfc9110#name-proactive-negotiation)
+* [RFC 7763 — The `text/markdown` Media Type](https://www.rfc-editor.org/rfc/rfc7763)
+* [RFC 8288 — Web Linking](https://www.rfc-editor.org/rfc/rfc8288) (the `Link` header and `rel="alternate"`)
+* [MDN — Content negotiation](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Content_negotiation)
 
 ## Community
 
