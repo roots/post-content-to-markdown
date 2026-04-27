@@ -1,6 +1,8 @@
 # Post Content to Markdown
 
-[![Packagist Downloads](https://img.shields.io/packagist/dt/roots/post-content-to-markdown?label=downloads&colorB=2b3072&colorA=525ddc&style=flat-square)](https://packagist.org/packages/roots/post-content-to-markdown)
+[![Packagist Installs](https://img.shields.io/packagist/dt/roots/post-content-to-markdown?label=packagist%20installs&colorB=2b3072&colorA=525ddc&style=flat-square)](https://packagist.org/packages/roots/post-content-to-markdown)
+[![GitHub downloads](https://img.shields.io/github/downloads/roots/post-content-to-markdown/total?label=github%20downloads&style=flat-square)](https://github.com/roots/post-content-to-markdown/releases)
+[![Try in Playground](https://img.shields.io/badge/try%20in%20playground-3858e9?logo=wordpress&logoColor=ffffff&message=&style=flat-square)](https://playground.wordpress.net/#{"$schema":"https://playground.wordpress.net/blueprint-schema.json","landingPage":"/hello-world.md","preferredVersions":{"php":"latest","wp":"latest"},"steps":[{"step":"setSiteOptions","options":{"permalink_structure":"/%25postname%25/"}},{"step":"installPlugin","pluginData":{"resource":"url","url":"https://github.com/roots/post-content-to-markdown/releases/latest/download/post-content-to-markdown.zip"},"options":{"activate":true}}]})
 [![Follow Roots](https://img.shields.io/badge/follow%20@rootswp-1da1f2?logo=twitter&logoColor=ffffff&message=&style=flat-square)](https://twitter.com/rootswp)
 [![Sponsor Roots](https://img.shields.io/badge/sponsor%20roots-525ddc?logo=github&style=flat-square&logoColor=ffffff&message=)](https://github.com/sponsors/roots)
 
