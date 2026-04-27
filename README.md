@@ -10,10 +10,13 @@ A WordPress plugin that returns post content in Markdown format when requested w
 
 > [!TIP]
 > Learn more about serving Markdown to agents and check your site's AI-readiness at [acceptmarkdown.com](https://acceptmarkdown.com/).
+> <details><summary>See the acceptmarkdown.com score when using this plugin</summary>
+> <p><a href="https://acceptmarkdown.com/"><img src="https://roots.io/app/uploads/scorecard-roots-io-serve-your-wordpress-posts-as-markdown.png" height="600"></a></p>
+> </details>
 
-| Query parameter / `.md` URL | Accept header |
+| `.md` URL / Query Parameter | [`text/markdown` Accept header](https://acceptmarkdown.com/) |
 |-------------|---------------|
-| ![Screenshot of the plugin output on WP's default Hello World post](https://cdn.roots.io/app/uploads/post-content-to-markdown-hello-world.png?2) | ![Screenshot of the plugin output on WP's default Hello World post (Accept header)](https://cdn.roots.io/app/uploads/post-content-to-markdown-hello-world-curl.png) |
+| ![Screenshot of the plugin output on WP's default Hello World post](https://cdn.roots.io/app/uploads/post-content-to-markdown-hello-world.png) | ![Screenshot of the plugin output on WP's default Hello World post (Accept header)](https://cdn.roots.io/app/uploads/post-content-to-markdown-hello-world-curl.png) |
 
 ## Support us
 
@@ -60,27 +63,6 @@ curl -H "Accept: text/markdown" https://example.com/my-awesome-post/feed/
 curl -H "Accept: text/markdown" https://example.com/feed/
 ```
 
-### Query parameters (accessible/shareable)
-
-For browsers and sharing, use the `?format=markdown` query parameter:
-
-- **Single post:** `https://example.com/post-slug/?format=markdown`
-- **Single post with comments:** `https://example.com/post-slug/feed/?format=markdown`
-- **Main feed:** `https://example.com/feed/?format=markdown`
-
-**Examples:**
-
-```bash
-# View in browser
-https://example.com/my-awesome-post/?format=markdown
-
-# Get post with comments
-https://example.com/my-awesome-post/feed/?format=markdown
-
-# Get main feed
-https://example.com/feed/?format=markdown
-```
-
 ### `.md` URL suffix
 
 Appending `.md` to any permalink returns the same Markdown representation and is a first-class, shareable URL.
@@ -100,6 +82,27 @@ Link: <https://example.com/my-awesome-post.md>; rel="alternate"; type="text/mark
 
 ```html
 <link rel="alternate" type="text/markdown" href="https://example.com/my-awesome-post.md">
+```
+
+### Query parameter
+
+For browsers and sharing, use the `?format=markdown` query parameter:
+
+- **Single post:** `https://example.com/post-slug/?format=markdown`
+- **Single post with comments:** `https://example.com/post-slug/feed/?format=markdown`
+- **Main feed:** `https://example.com/feed/?format=markdown`
+
+**Examples:**
+
+```bash
+# View in browser
+https://example.com/my-awesome-post/?format=markdown
+
+# Get post with comments
+https://example.com/my-awesome-post/feed/?format=markdown
+
+# Get main feed
+https://example.com/feed/?format=markdown
 ```
 
 ### Response headers
