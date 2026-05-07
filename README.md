@@ -9,7 +9,7 @@
 A WordPress plugin that returns post content in Markdown format when requested with an `Accept` header set to `text/markdown`, a `.md` URL suffix (e.g. `/hello-world.md`), or a `?format=markdown` query parameter.
 
 > [!TIP]
-> Learn more about serving Markdown to agents and check your site's AI-readiness at [acceptmarkdown.com](https://acceptmarkdown.com/).
+> Learn more about serving Markdown to AI agents and check your site's AI-readiness at [acceptmarkdown.com](https://acceptmarkdown.com/).
 > <details><summary>See the acceptmarkdown.com score when using this plugin</summary>
 > <p><a href="https://acceptmarkdown.com/"><img src="https://roots.io/app/uploads/scorecard-roots-io-serve-your-wordpress-posts-as-markdown.png" height="600"></a></p>
 > </details>
@@ -42,7 +42,7 @@ composer require roots/post-content-to-markdown
 
 ## Usage
 
-### Accept headers (ideal for LLMs)
+### Accept headers (ideal for AI agents)
 
 Send an `Accept: text/markdown` header to any of these URLs:
 
@@ -164,7 +164,7 @@ Note that WordPress requires pretty permalinks to be enabled (Settings → Perma
 
 **Autodiscovery:**
 
-The plugin automatically adds a `<atom:link>` element to your site's RSS feed, allowing feed readers and LLMs to discover the Markdown version:
+The plugin automatically adds a `<atom:link>` element to your site's RSS feed, allowing feed readers and AI agents to discover the Markdown version:
 
 ```xml
 <atom:link href="https://example.com/feed/markdown/" rel="alternate" type="text/markdown" />
@@ -385,7 +385,7 @@ You can customize the cache duration using the `post_content_to_markdown/feed_ca
 
 ## Resources
 
-* [acceptmarkdown.com](https://acceptmarkdown.com/) — serving Markdown to agents via content negotiation, plus a readiness check for your site
+* [acceptmarkdown.com](https://acceptmarkdown.com/) — serving Markdown to AI agents via content negotiation, plus a readiness check for your site
 * [RFC 9110 §12.5.1 — Proactive Negotiation](https://www.rfc-editor.org/rfc/rfc9110#name-proactive-negotiation)
 * [RFC 7763 — The `text/markdown` Media Type](https://www.rfc-editor.org/rfc/rfc7763)
 * [RFC 8288 — Web Linking](https://www.rfc-editor.org/rfc/rfc8288) (the `Link` header and `rel="alternate"`)
