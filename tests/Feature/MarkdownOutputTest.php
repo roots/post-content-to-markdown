@@ -345,3 +345,18 @@ test('Accept ties are broken by specificity, then header order', function (strin
     'markdown named after a wildcard' => ['*/*, text/markdown', 'text/markdown'],
     'browser default' => ['text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8', 'text/html'],
 ]);
+
+test('front page is served as markdown at /index.md', function () {
+    $response = makeRequest('/index.md');
+
+    expect($response['status'])->toBe(200)
+        ->and($response['headers']['content-type'] ?? '')->toContain('text/markdown')
+        ->and($response['body'])->toContain('HOME-BODY');
+});
+
+test('front page advertises /index.md as its markdown alternate', function () {
+    $response = makeRequest('/');
+
+    expect($response['headers']['link'] ?? '')->toContain('<'.baseUrl().'/index.md>')
+        ->and($response['body'])->toContain('href="'.baseUrl().'/index.md"');
+});

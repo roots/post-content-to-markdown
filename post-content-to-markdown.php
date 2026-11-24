@@ -3,7 +3,7 @@
 /**
  * Plugin Name: Post Content to Markdown
  * Description: Serve post content as Markdown via Accept headers, .md URL suffix, or query parameters.
- * Version: 1.7.2
+ * Version: 1.8.0
  * Author: roots.io
  * Requires PHP: 8.1
  */
@@ -175,6 +175,23 @@ function isAcceptable()
 }
 
 /**
+ * Whether /index.md is the front page's Markdown URL: only for a static front
+ * page, and only when no other post or top-level page uses the slug "index"
+ * (which keeps its own /index.md).
+ */
+function indexMdServesFrontPage()
+{
+    if (get_option('show_on_front') !== 'page') {
+        return false;
+    }
+
+    // Check pages first, the same order WordPress routes /index/ in.
+    $index = get_page_by_path('index', OBJECT, ['page']) ?: get_page_by_path('index', OBJECT, ['post']);
+
+    return ! $index || $index->ID === (int) get_option('page_on_front');
+}
+
+/**
  * Detect a .md URL suffix (e.g. /about.md) and internally rewrite REQUEST_URI
  * to the underlying URL so existing WP and custom routing matches as usual.
  * The URL the client hit is preserved in the address bar; this rewrite only
@@ -211,6 +228,11 @@ add_action('plugins_loaded', function () {
     }
 
     $stripped = substr($path, 0, -3);
+
+    if ($stripped === $home_path.'index' && indexMdServesFrontPage()) {
+        $stripped = $home_path;
+    }
+
     if ($stripped === '' || ! str_ends_with($stripped, '/')) {
         $stripped .= '/';
     }
@@ -316,7 +338,15 @@ function currentMdAlternateUrl()
         return null;
     }
 
-    return rtrim(get_permalink($post), '/').'.md';
+    $permalink = get_permalink($post);
+
+    // The front page's permalink is the site root, where appending .md would
+    // give https://example.com.md, so it uses /index.md instead.
+    if (untrailingslashit($permalink) === untrailingslashit(home_url())) {
+        return indexMdServesFrontPage() ? home_url('/index.md') : null;
+    }
+
+    return rtrim($permalink, '/').'.md';
 }
 
 /**
