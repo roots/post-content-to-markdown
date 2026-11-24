@@ -229,11 +229,16 @@ add_action('plugins_loaded', function () {
 
     $stripped = substr($path, 0, -3);
 
-    if ($stripped === $home_path.'index' && indexMdServesFrontPage()) {
+    if ($stripped === rtrim($home_path, '/') || ($stripped === $home_path.'index' && indexMdServesFrontPage())) {
         $stripped = $home_path;
     }
 
-    if ($stripped === '' || ! str_ends_with($stripped, '/')) {
+    // Match the permalink structure's trailing slash so WordPress doesn't
+    // canonical-redirect the stripped URL, which would drop the .md. Plain
+    // permalinks (no structure) keep the slash. $wp_rewrite isn't set up yet,
+    // so read the structure directly, as WP_Rewrite::init() does.
+    $structure = (string) get_option('permalink_structure');
+    if ($stripped === '' || (($structure === '' || str_ends_with($structure, '/')) && ! str_ends_with($stripped, '/'))) {
         $stripped .= '/';
     }
 
