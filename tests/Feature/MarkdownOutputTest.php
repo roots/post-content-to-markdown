@@ -196,3 +196,62 @@ test('markdown via query parameter reports X-Markdown-Source: query', function (
 
     expect($response['headers']['x-markdown-source'] ?? '')->toBe('query');
 });
+
+test('password-protected post is not served as markdown', function (string $path, array $headers) {
+    $response = makeRequest($path, $headers);
+
+    expect($response['status'])->toBe(200)
+        ->and($response['headers']['content-type'] ?? '')->not->toContain('text/markdown')
+        ->and($response['body'])->toContain('post-password-form')
+        ->and($response['body'])->not->toContain('PROTECTED-BODY');
+})->with([
+    'query parameter' => ['/protected-post/?format=markdown', []],
+    'Accept header' => ['/protected-post/', ['Accept' => 'text/markdown']],
+    '.md URL' => ['/protected-post.md', []],
+]);
+
+test('password-protected post does not advertise a .md alternate', function () {
+    $response = makeRequest('/protected-post/');
+
+    expect($response['status'])->toBe(200)
+        ->and($response['body'])->toContain('post-password-form')
+        ->and($response['headers']['link'] ?? '')->not->toContain('text/markdown')
+        ->and($response['body'])->not->toContain('type="text/markdown"');
+});
+
+test('markdown feed excludes password-protected posts', function () {
+    makeRequest('/?clear_markdown_feed_cache=1');
+
+    $dedicated = makeRequest('/feed/markdown/');
+    $negotiated = makeRequest('/feed/?format=markdown');
+
+    expect($dedicated['body'])->toContain('Hello world')
+        ->and($dedicated['body'])->not->toContain('PROTECTED-BODY')
+        ->and($dedicated['body'])->not->toContain('PROTECTED-COMMENT')
+        ->and($negotiated['body'])->toContain('Hello world')
+        ->and($negotiated['body'])->not->toContain('PROTECTED-BODY')
+        ->and($negotiated['body'])->not->toContain('PROTECTED-COMMENT');
+});
+
+test('password-protected post comment feed is not served as markdown', function () {
+    $response = makeRequest('/protected-post/feed/?format=markdown');
+
+    expect($response['status'])->toBe(200)
+        ->and($response['headers']['content-type'] ?? '')->not->toContain('text/markdown')
+        ->and($response['body'])->toContain('Protected Comments')
+        ->and($response['body'])->not->toContain('PROTECTED-BODY')
+        ->and($response['body'])->not->toContain('PROTECTED-COMMENT');
+});
+
+test('password-protected post is served as markdown once the password is entered', function () {
+    $cookies = postFormCookies('/wp-login.php?action=postpass', ['post_password' => 'letmein']);
+
+    expect($cookies)->toContain('wp-postpass_');
+
+    $response = makeRequest('/protected-post/?format=markdown', [
+        'Cookie' => $cookies,
+    ]);
+
+    expect($response['headers']['content-type'] ?? '')->toContain('text/markdown')
+        ->and($response['body'])->toContain('PROTECTED-BODY');
+});

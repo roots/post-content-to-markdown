@@ -1,11 +1,19 @@
 <?php
 
 /**
+ * Base URL of the WordPress Playground instance
+ */
+function baseUrl(): string
+{
+    return 'http://localhost:9400';
+}
+
+/**
  * Make an HTTP request to the WordPress Playground instance
  */
 function makeRequest(string $path, array $headers = []): array
 {
-    $url = 'http://localhost:9400'.$path;
+    $url = baseUrl().$path;
 
     $context_options = [
         'http' => [
@@ -49,4 +57,35 @@ function makeRequest(string $path, array $headers = []): array
         'headers' => $responseHeaders,
         'status' => $status,
     ];
+}
+
+/**
+ * POST a form to the WordPress Playground instance and return the cookies it
+ * sets as a ready-to-send Cookie header value. Redirects are not followed.
+ */
+function postFormCookies(string $path, array $fields, array $headers = []): string
+{
+    $headers['Content-Type'] = 'application/x-www-form-urlencoded';
+
+    $context = stream_context_create(['http' => [
+        'method' => 'POST',
+        'header' => implode("\r\n", array_map(
+            fn ($key, $value) => "$key: $value",
+            array_keys($headers),
+            array_values($headers)
+        )),
+        'content' => http_build_query($fields),
+        'follow_location' => 0,
+        'ignore_errors' => true,
+    ]]);
+    @file_get_contents(baseUrl().$path, false, $context);
+
+    $cookies = [];
+    foreach ($http_response_header ?? [] as $header) {
+        if (preg_match('#^Set-Cookie:\s*([^=;]+=[^;]*)#i', $header, $m) && ! str_ends_with($m[1], '=deleted')) {
+            $cookies[] = $m[1];
+        }
+    }
+
+    return implode('; ', $cookies);
 }

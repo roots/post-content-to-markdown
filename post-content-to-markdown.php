@@ -253,6 +253,31 @@ add_action('send_headers', function () {
 });
 
 /**
+ * Whether a single post may be served as Markdown to the current visitor:
+ * its type is allowed, it isn't password-protected (or the visitor has
+ * already entered the password), and the post_allowed filter permits it.
+ */
+function canServePost($post)
+{
+    if (! $post || ! is_a($post, 'WP_Post')) {
+        return false;
+    }
+
+    $allowed = apply_filters('post_content_to_markdown/post_types', ['post']);
+    if (! in_array($post->post_type, $allowed, true)) {
+        return false;
+    }
+
+    // Markdown output reads post_content directly, bypassing the password form
+    // that core substitutes via the_content, so enforce the password here.
+    if (post_password_required($post)) {
+        return false;
+    }
+
+    return (bool) apply_filters('post_content_to_markdown/post_allowed', true, $post);
+}
+
+/**
  * Return the .md URL for the current singular post if the plugin would serve
  * a Markdown representation, or null when no alternate exists or should be
  * advertised (admin, Markdown response, disallowed post, filter disabled).
@@ -268,16 +293,7 @@ function currentMdAlternateUrl()
     }
 
     $post = get_queried_object();
-    if (! $post || ! is_a($post, 'WP_Post')) {
-        return null;
-    }
-
-    $allowed = apply_filters('post_content_to_markdown/post_types', ['post']);
-    if (! in_array($post->post_type, $allowed, true)) {
-        return null;
-    }
-
-    if (! apply_filters('post_content_to_markdown/post_allowed', true, $post)) {
+    if (! canServePost($post)) {
         return null;
     }
 
@@ -349,33 +365,41 @@ add_action('template_redirect', function () {
         exit;
     }
 
+    if (! is_singular()) {
+        return;
+    }
+
+    $post = get_queried_object();
+    if (! $post || ! is_a($post, 'WP_Post')) {
+        return;
+    }
+
+    // Fall through to the normal render (password form, protected comment
+    // feed) rather than exposing a protected post's content or comments.
+    if (post_password_required($post)) {
+        return;
+    }
+
+    // Only visitors with the password cookie get here for a protected post, so
+    // keep page caches from storing their response for the shared URL.
+    if ($post->post_password !== '' && ! defined('DONOTCACHEPAGE')) {
+        define('DONOTCACHEPAGE', true);
+    }
+
     // Handle single post comment feed (/post-slug/feed/ or /post-slug/?feed=rss2)
-    if (is_singular() && get_query_var('feed')) {
-        $post = get_queried_object();
-        if ($post && is_a($post, 'WP_Post')) {
-            outputSinglePostCommentFeed($post);
-            exit;
-        }
+    if (get_query_var('feed')) {
+        outputSinglePostCommentFeed($post);
+        exit;
     }
 
     // Handle regular single post
-    if (is_singular()) {
-        $post = get_queried_object();
-        if (! $post || ! is_a($post, 'WP_Post')) {
-            return;
-        }
-
-        $allowed_post_types = apply_filters('post_content_to_markdown/post_types', ['post']);
-        if (in_array($post->post_type, $allowed_post_types, true)) {
-            if (! apply_filters('post_content_to_markdown/post_allowed', true, $post)) {
-                return;
-            }
-
-            sendMarkdownHeaders();
-            echo '# '.strip_tags($post->post_title)."\n\n".contentToMarkdown($post->post_content);
-            exit;
-        }
+    if (! canServePost($post)) {
+        return;
     }
+
+    sendMarkdownHeaders();
+    echo '# '.strip_tags($post->post_title)."\n\n".contentToMarkdown($post->post_content);
+    exit;
 });
 
 /**
@@ -411,6 +435,9 @@ function outputMarkdownFeed()
         'post_type' => apply_filters('post_content_to_markdown/feed_post_types', ['post']),
         'posts_per_page' => apply_filters('post_content_to_markdown/feed_posts_per_page', 10),
         'post_status' => 'publish',
+        // The feed is cached and shared across visitors, so always exclude
+        // password-protected posts regardless of the requester's cookies.
+        'has_password' => false,
         'orderby' => 'date',
         'order' => 'DESC',
     ]);
