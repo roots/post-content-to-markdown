@@ -26,15 +26,15 @@ if (! class_exists('\League\HTMLToMarkdown\HtmlConverter')) {
 }
 
 /**
- * Return the q-value for a media type in an Accept header, picking the q of
- * the most specific matching entry (exact > type/* > *\/*) per RFC 9110.
+ * Find the most specific Accept entry matching a media type (exact > type/* >
+ * *\/*, per RFC 9110) and return its q-value, specificity (2, 1, 0, or -1 for
+ * no match), and position in the header.
  */
-function acceptQuality($accept, $type, $subtype)
+function acceptMatch($accept, $type, $subtype)
 {
-    $best = 0.0;
-    $bestSpecificity = -1;
+    $best = ['q' => 0.0, 'specificity' => -1, 'position' => PHP_INT_MAX];
 
-    foreach (explode(',', $accept) as $entry) {
+    foreach (explode(',', $accept) as $position => $entry) {
         $entry = trim($entry);
         if ($entry === '') {
             continue;
@@ -61,13 +61,20 @@ function acceptQuality($accept, $type, $subtype)
             }
         }
 
-        if ($specificity > $bestSpecificity || ($specificity === $bestSpecificity && $q > $best)) {
-            $best = $q;
-            $bestSpecificity = $specificity;
+        if ($specificity > $best['specificity'] || ($specificity === $best['specificity'] && $q > $best['q'])) {
+            $best = ['q' => $q, 'specificity' => $specificity, 'position' => $position];
         }
     }
 
     return $best;
+}
+
+/**
+ * Return the q-value for a media type in an Accept header.
+ */
+function acceptQuality($accept, $type, $subtype)
+{
+    return acceptMatch($accept, $type, $subtype)['q'];
 }
 
 /**
@@ -82,8 +89,8 @@ function isMdUrlRequest()
 }
 
 /**
- * Check if Markdown is preferred over HTML via Accept header q-values,
- * a .md URL suffix, or the ?format=markdown query parameter.
+ * Check if Markdown is preferred over HTML via the Accept header, a .md URL
+ * suffix, or the ?format=markdown query parameter.
  */
 function isMarkdownRequested()
 {
@@ -100,10 +107,22 @@ function isMarkdownRequested()
         return false;
     }
 
-    $markdown = acceptQuality($accept, 'text', 'markdown');
-    $html = acceptQuality($accept, 'text', 'html');
+    $markdown = acceptMatch($accept, 'text', 'markdown');
+    $html = acceptMatch($accept, 'text', 'html');
 
-    return $markdown > 0.0 && $markdown > $html;
+    if ($markdown['q'] <= 0.0 || $markdown['q'] !== $html['q']) {
+        return $markdown['q'] > $html['q'];
+    }
+
+    // On a tie, a named type beats a wildcard, and between two named types the
+    // one listed first wins (e.g. `text/markdown, text/html, */*`, as sent by
+    // several AI agents). When only a wildcard matches both, it's the same
+    // entry for each, so HTML stays the default.
+    if ($markdown['specificity'] !== $html['specificity']) {
+        return $markdown['specificity'] > $html['specificity'];
+    }
+
+    return $markdown['position'] < $html['position'];
 }
 
 /**
