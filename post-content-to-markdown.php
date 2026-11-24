@@ -3,7 +3,7 @@
 /**
  * Plugin Name: Post Content to Markdown
  * Description: Serve post content as Markdown via Accept headers, .md URL suffix, or query parameters.
- * Version: 1.7.1
+ * Version: 1.7.2
  * Author: roots.io
  * Requires PHP: 8.1
  */
@@ -501,8 +501,20 @@ function renderMarkdownFeed()
 
         // Excerpt if enabled
         if ($include_excerpt) {
-            $excerpt = has_excerpt($post->ID) ? $post->post_excerpt : wp_trim_words($post->post_content, 55);
-            echo '**Excerpt:** '.\PostContentToMarkdown\contentToMarkdown($excerpt)."\n\n";
+            if (has_excerpt($post->ID)) {
+                $excerpt = \PostContentToMarkdown\contentToMarkdown($post->post_excerpt);
+            } else {
+                // Strip shortcodes and blocks before trimming, as core's
+                // wp_trim_excerpt() does: wp_trim_words() strips tags, including
+                // block delimiters, and can cut a shortcode's closing tag, which
+                // would expose gated content. Don't render the result:
+                // strip_shortcodes() turns an escaped [[tag]] into a live [tag].
+                $excerpt = \PostContentToMarkdown\contentToMarkdown(
+                    wp_trim_words(excerpt_remove_blocks(strip_shortcodes($post->post_content)), 55),
+                    false
+                );
+            }
+            echo '**Excerpt:** '.$excerpt."\n\n";
         }
 
         // Post content
@@ -685,8 +697,8 @@ function clearFeedCache()
  *
  * @param  string  $content  The HTML content to convert.
  * @param  bool  $render  Whether to render blocks and shortcodes before converting.
- *                        Pass false where core doesn't render them, such as
- *                        comments.
+ *                        Pass false for text that must not be rendered, such
+ *                        as comments and generated excerpts.
  * @return string The converted Markdown.
  */
 function contentToMarkdown($content, $render = true)

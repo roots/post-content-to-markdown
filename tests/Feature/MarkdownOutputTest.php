@@ -316,3 +316,16 @@ test('shortcodes and blocks in comments are not rendered', function () {
             ->and($response['body'])->not->toContain('PRIVATE-BLOCK-DATA');
     }
 });
+
+test('markdown feed excerpts do not expose gated content or render shortcodes', function () {
+    makeRequest('/?clear_markdown_feed_cache=1');
+
+    $response = makeRequest('/feed/markdown/');
+
+    expect($response['body'])->toContain('**Excerpt:** EXCERPT-INTRO \[private\_data\]')
+        ->and($response['body'])->toContain('**Excerpt:** MANUAL-TEASER')
+        ->and($response['body'])->not->toContain('BLOCK-SECRET')
+        ->and($response['body'])->not->toContain('EXCERPT-SECRET')
+        ->and($response['body'])->not->toContain('MANUAL-SECRET')
+        ->and($response['body'])->not->toContain('PRIVATE-DATA');
+});
