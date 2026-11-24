@@ -360,3 +360,13 @@ test('front page advertises /index.md as its markdown alternate', function () {
     expect($response['headers']['link'] ?? '')->toContain('<'.baseUrl().'/index.md>')
         ->and($response['body'])->toContain('href="'.baseUrl().'/index.md"');
 });
+
+test('.md URLs work with permalinks that have no trailing slash', function () {
+    $response = makeRequest('/hello-world.md', [
+        'X-Fixture-No-Trailing-Slash' => '1',
+    ]);
+
+    expect($response['status'])->toBe(200)
+        ->and($response['headers']['content-type'] ?? '')->toContain('text/markdown')
+        ->and($response['body'])->toContain('# Hello world');
+});
