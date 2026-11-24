@@ -255,3 +255,35 @@ test('password-protected post is served as markdown once the password is entered
     expect($response['headers']['content-type'] ?? '')->toContain('text/markdown')
         ->and($response['body'])->toContain('PROTECTED-BODY');
 });
+
+test('single post comment feed returns markdown', function () {
+    $response = makeRequest('/hello-world/feed/?format=markdown');
+
+    expect($response['status'])->toBe(200)
+        ->and($response['headers']['content-type'] ?? '')->toContain('text/markdown')
+        ->and($response['body'])->toContain('# Hello world')
+        ->and($response['body'])->toContain('## Comments');
+});
+
+test('comment feed is not served as markdown for posts that are not allowed', function (string $path) {
+    $response = makeRequest($path);
+
+    expect($response['status'])->toBe(200)
+        ->and($response['headers']['content-type'] ?? '')->not->toContain('text/markdown')
+        ->and($response['body'])->toContain('<rss')
+        ->and($response['body'])->not->toContain('HIDDEN-BODY');
+})->with([
+    'post type not allowed' => ['/sample-page/feed/?format=markdown'],
+    'post_allowed returns false' => ['/hidden-post/feed/?format=markdown'],
+]);
+
+test('markdown feed excludes posts excluded by post_allowed', function () {
+    makeRequest('/?clear_markdown_feed_cache=1');
+
+    $response = makeRequest('/feed/markdown/');
+
+    expect($response['status'])->toBe(200)
+        ->and($response['body'])->toContain('Hello world')
+        ->and($response['body'])->not->toContain('Hidden Post')
+        ->and($response['body'])->not->toContain('HIDDEN-BODY');
+});

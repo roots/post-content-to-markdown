@@ -369,14 +369,10 @@ add_action('template_redirect', function () {
         return;
     }
 
+    // Fall through to the normal render (e.g. the password form) for posts
+    // that can't be served as Markdown.
     $post = get_queried_object();
-    if (! $post || ! is_a($post, 'WP_Post')) {
-        return;
-    }
-
-    // Fall through to the normal render (password form, protected comment
-    // feed) rather than exposing a protected post's content or comments.
-    if (post_password_required($post)) {
+    if (! canServePost($post)) {
         return;
     }
 
@@ -393,10 +389,6 @@ add_action('template_redirect', function () {
     }
 
     // Handle regular single post
-    if (! canServePost($post)) {
-        return;
-    }
-
     sendMarkdownHeaders();
     echo '# '.strip_tags($post->post_title)."\n\n".contentToMarkdown($post->post_content);
     exit;
@@ -441,6 +433,11 @@ function outputMarkdownFeed()
         'orderby' => 'date',
         'order' => 'DESC',
     ]);
+
+    // Apply the same per-post gate as single-post Markdown responses.
+    $posts = array_filter($posts, function ($post) {
+        return apply_filters('post_content_to_markdown/post_allowed', true, $post);
+    });
 
     $include_comments = apply_filters('post_content_to_markdown/feed_include_comments', false);
     $include_excerpt = apply_filters('post_content_to_markdown/feed_include_excerpt', false);

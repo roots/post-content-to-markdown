@@ -178,7 +178,7 @@ The plugin provides several filters for customization:
 
 #### `post_content_to_markdown/post_types`
 
-Filter the post types that can be served as Markdown for single posts.
+Filter the post types that can be served as Markdown for single posts and their comment feeds.
 
 ```php
 add_filter('post_content_to_markdown/post_types', function ($post_types) {
@@ -191,7 +191,7 @@ add_filter('post_content_to_markdown/post_types', function ($post_types) {
 
 #### `post_content_to_markdown/post_allowed`
 
-Filter whether a specific post is allowed to be served as Markdown. Runs after the post type check, so it only receives posts whose type is already allowed. Returning `false` short-circuits the Markdown response and falls through to the normal HTML render.
+Filter whether a specific post is allowed to be served as Markdown. For single posts and their comment feeds, it runs after the post type check, so it only receives posts whose type is already allowed, and returning `false` falls through to the normal render. In the Markdown feed, it runs for each post, and returning `false` leaves the post out of the feed.
 
 ```php
 add_filter('post_content_to_markdown/post_allowed', function ($allowed, $post) {
