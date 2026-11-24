@@ -191,7 +191,7 @@ add_filter('post_content_to_markdown/post_types', function ($post_types) {
 
 #### `post_content_to_markdown/post_allowed`
 
-Filter whether a specific post is allowed to be served as Markdown. For single posts and their comment feeds, it runs after the post type check, so it only receives posts whose type is already allowed, and returning `false` falls through to the normal render. In the Markdown feed, it runs for each post, and returning `false` leaves the post out of the feed.
+Filter whether a specific post is allowed to be served as Markdown. For single posts and their comment feeds, it runs after the post type check, so it only receives posts whose type is already allowed, and returning `false` falls through to the normal render. In the Markdown feed, it runs for each post with no current user (the feed is shared by every visitor), and returning `false` leaves the post out of the feed.
 
 ```php
 add_filter('post_content_to_markdown/post_allowed', function ($allowed, $post) {
@@ -374,9 +374,9 @@ add_filter('post_content_to_markdown/markdown_output', function ($markdown, $ori
 
 The HTML → Markdown conversion is cached at the object-cache layer (`wp_cache_get` / `wp_cache_set`) keyed on a content hash. Sites with a persistent object cache like Redis or Memcached avoid re-running block rendering, shortcode expansion, and the `league/html-to-markdown` conversion on repeat hits. Cache entries expire after an hour (filterable via `post_content_to_markdown/conversion_cache_duration`); content changes produce a new hash and a fresh entry, so no explicit invalidation is needed.
 
-The cache assumes that rendering the same post content produces the same output. If you use dynamic blocks or shortcodes whose output varies by request context (e.g. current user, current time, site option that changes mid-TTL), the first render is frozen for the TTL window. Shorten the TTL via the filter above for content where that matters. The `post_content_to_markdown/markdown_output` filter runs on every request (after the cache lookup), so per-request customization there works without fighting the cache.
+The cache assumes that rendering the same post content produces the same output. Conversions for logged-in users are never cached or served from the cache, so output rendered for one user isn't shown to another. For logged-out visitors, if you use dynamic blocks or shortcodes whose output varies by request context (e.g. cookies, current time, site option that changes mid-TTL), the first render is frozen for the TTL window. Shorten the TTL via the filter above for content where that matters. The `post_content_to_markdown/markdown_output` filter runs on every request (after the cache lookup), so per-request customization there works without fighting the cache.
 
-The Markdown feed is cached for 1 hour by default via a transient. The cache is automatically cleared when:
+The Markdown feed is cached for 1 hour by default via a transient. Every visitor gets the same cached feed, so it is always rendered with no current user (user ID 0), and logged-in users see the public feed. The cache is automatically cleared when:
 - A post is published or updated
 - A post is deleted
 - Comments are added, edited, or deleted (when comments are included in feed)

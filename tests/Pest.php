@@ -89,3 +89,21 @@ function postFormCookies(string $path, array $fields, array $headers = []): stri
 
     return implode('; ', $cookies);
 }
+
+/**
+ * Log in as the Playground admin and return the auth cookies.
+ */
+function adminCookies(): string
+{
+    $cookies = postFormCookies('/wp-login.php', [
+        'log' => 'admin',
+        'pwd' => 'password',
+        'testcookie' => '1',
+    ], [
+        'Cookie' => 'wordpress_test_cookie=WP%20Cookie%20check',
+    ]);
+
+    expect($cookies)->toContain('wordpress_logged_in_');
+
+    return $cookies;
+}
