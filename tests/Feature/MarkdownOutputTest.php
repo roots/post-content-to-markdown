@@ -302,3 +302,17 @@ test('markdown feed is built with no current user', function () {
         ->and($anonymous['body'])->toContain('login required')
         ->and($anonymous['body'])->not->toContain('MEMBER-SECRET');
 });
+
+test('shortcodes and blocks in comments are not rendered', function () {
+    makeRequest('/?clear_markdown_feed_cache=1');
+
+    $commentFeed = makeRequest('/hello-world/feed/?format=markdown');
+    $feed = makeRequest('/feed/markdown/');
+
+    foreach ([$commentFeed, $feed] as $response) {
+        expect($response['headers']['content-type'] ?? '')->toContain('text/markdown')
+            ->and($response['body'])->toContain('COMMENT-TEXT')
+            ->and($response['body'])->not->toContain('PRIVATE-DATA')
+            ->and($response['body'])->not->toContain('PRIVATE-BLOCK-DATA');
+    }
+});
