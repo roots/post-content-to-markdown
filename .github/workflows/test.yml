@@ -50,7 +50,7 @@ jobs:
           # Wait for wp-playground to be ready
           echo "Waiting for wp-playground to start..."
           for i in {1..30}; do
-            if curl -s http://localhost:9400 > /dev/null; then
+            if curl -s http://127.0.0.1:9400 > /dev/null; then
               echo "wp-playground is ready!"
               break
             fi

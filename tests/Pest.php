@@ -5,7 +5,7 @@
  */
 function baseUrl(): string
 {
-    return 'http://localhost:9400';
+    return 'http://127.0.0.1:9400';
 }
 
 /**

@@ -74,6 +74,14 @@ Appending `.md` to any permalink returns the same Markdown representation and is
 curl https://example.com/my-awesome-post.md
 ```
 
+When the front page is a static page (and `page` is in the [`post_types`](#post_content_to_markdownpost_types) filter), its Markdown URL is `index.md` under the home URL:
+
+```bash
+curl https://example.com/index.md
+```
+
+If another post or top-level page already uses the slug `index`, `/index.md` is left to that content and the front page doesn't advertise a Markdown URL.
+
 `.md` URL responses include `X-Robots-Tag: noindex, nofollow` so search engines don't index the Markdown alias alongside the canonical HTML page. Disable this feature with the `post_content_to_markdown/md_url_enabled` filter.
 
 HTML responses advertise the Markdown representation two ways so both RFC 8288-aware crawlers and HTML-parsing clients can discover it without sending `Accept: text/markdown`:
