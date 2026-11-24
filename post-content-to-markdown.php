@@ -502,21 +502,41 @@ function renderMarkdownFeed()
     echo '**Feed URL:** '.get_feed_link('markdown')."\n\n";
     echo "---\n\n";
 
-    $posts = get_posts([
+    $per_page = (int) apply_filters('post_content_to_markdown/feed_posts_per_page', 10);
+    $query = [
         'post_type' => apply_filters('post_content_to_markdown/feed_post_types', ['post']),
-        'posts_per_page' => apply_filters('post_content_to_markdown/feed_posts_per_page', 10),
+        'posts_per_page' => $per_page,
         'post_status' => 'publish',
         // The feed is cached and shared across visitors, so always exclude
         // password-protected posts regardless of the requester's cookies.
         'has_password' => false,
-        'orderby' => 'date',
-        'order' => 'DESC',
-    ]);
+        // ID breaks ties between posts with the same date, so paging is stable.
+        'orderby' => ['date' => 'DESC', 'ID' => 'DESC'],
+    ];
 
-    // Apply the same per-post gate as single-post Markdown responses.
-    $posts = array_filter($posts, function ($post) {
-        return apply_filters('post_content_to_markdown/post_allowed', true, $post);
-    });
+    // Apply the same per-post gate as single-post Markdown responses, fetching
+    // more pages so rejected posts don't leave the feed short. The scan stops
+    // after 10 pages so a filter that rejects most posts can't walk the whole
+    // site.
+    $posts = [];
+    for ($page = 1; $page <= 10; $page++) {
+        $batch = get_posts($query + ['paged' => $page]);
+
+        foreach ($batch as $post) {
+            // Keyed by ID so a post that shifts across pages isn't listed twice.
+            if (! isset($posts[$post->ID]) && apply_filters('post_content_to_markdown/post_allowed', true, $post)) {
+                $posts[$post->ID] = $post;
+            }
+        }
+
+        if ($per_page < 1 || count($batch) < $per_page || count($posts) >= $per_page) {
+            break;
+        }
+    }
+
+    if ($per_page > 0) {
+        $posts = array_slice($posts, 0, $per_page);
+    }
 
     $include_comments = apply_filters('post_content_to_markdown/feed_include_comments', false);
     $include_excerpt = apply_filters('post_content_to_markdown/feed_include_excerpt', false);

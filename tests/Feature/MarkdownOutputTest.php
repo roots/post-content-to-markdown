@@ -370,3 +370,14 @@ test('.md URLs work with permalinks that have no trailing slash', function () {
         ->and($response['headers']['content-type'] ?? '')->toContain('text/markdown')
         ->and($response['body'])->toContain('# Hello world');
 });
+
+test('markdown feed keeps looking past posts excluded by post_allowed', function () {
+    makeRequest('/?clear_markdown_feed_cache=1');
+
+    $response = makeRequest('/feed/markdown/', [
+        'X-Fixture-Feed-Only-Hello-World' => '1',
+    ]);
+
+    expect($response['body'])->toContain('# Hello world')
+        ->and($response['body'])->not->toContain('No posts available');
+});
