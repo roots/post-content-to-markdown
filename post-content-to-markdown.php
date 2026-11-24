@@ -3,7 +3,7 @@
 /**
  * Plugin Name: Post Content to Markdown
  * Description: Serve post content as Markdown via Accept headers, .md URL suffix, or query parameters.
- * Version: 1.8.0
+ * Version: 1.8.1
  * Author: roots.io
  * Requires PHP: 8.1
  */
@@ -453,8 +453,9 @@ add_action('template_redirect', function () {
  */
 function outputMarkdownFeed()
 {
-    // Check for cached feed
+    // Check for cached feed. The version is bumped by clearFeedCache().
     $cache_key = 'post_content_to_markdown_feed_'.md5(serialize([
+        (int) get_option('post_content_to_markdown_feed_cache_version', 0),
         apply_filters('post_content_to_markdown/feed_post_types', ['post']),
         apply_filters('post_content_to_markdown/feed_posts_per_page', 10),
         apply_filters('post_content_to_markdown/feed_include_comments', false),
@@ -758,6 +759,11 @@ add_action('wp_set_comment_status', function ($comment_id, $comment_status) {
 function clearFeedCache()
 {
     global $wpdb;
+
+    // Feed cache keys include this version, so bumping it invalidates cached
+    // feeds wherever transients are stored, including persistent object
+    // caches (Redis, Memcached) that the DELETEs below can't reach.
+    update_option('post_content_to_markdown_feed_cache_version', (int) get_option('post_content_to_markdown_feed_cache_version', 0) + 1, false);
 
     $like = $wpdb->esc_like('_transient_post_content_to_markdown_feed_').'%';
     $wpdb->query($wpdb->prepare("DELETE FROM {$wpdb->options} WHERE option_name LIKE %s", $like));
