@@ -329,3 +329,19 @@ test('markdown feed excerpts do not expose gated content or render shortcodes', 
         ->and($response['body'])->not->toContain('MANUAL-SECRET')
         ->and($response['body'])->not->toContain('PRIVATE-DATA');
 });
+
+test('Accept ties are broken by specificity, then header order', function (string $accept, string $expected) {
+    $response = makeRequest('/hello-world/', [
+        'Accept' => $accept,
+    ]);
+
+    expect($response['status'])->toBe(200)
+        ->and($response['headers']['content-type'])->toContain($expected);
+})->with([
+    'markdown listed first (AI agents)' => ['text/markdown, text/html, */*', 'text/markdown'],
+    'html listed first' => ['text/html, text/markdown', 'text/html'],
+    'markdown named, html only via wildcard' => ['text/markdown, */*', 'text/markdown'],
+    'html named, markdown only via wildcard' => ['text/html, */*', 'text/html'],
+    'markdown named after a wildcard' => ['*/*, text/markdown', 'text/markdown'],
+    'browser default' => ['text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8', 'text/html'],
+]);

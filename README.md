@@ -63,6 +63,8 @@ curl -H "Accept: text/markdown" https://example.com/my-awesome-post/feed/
 curl -H "Accept: text/markdown" https://example.com/feed/
 ```
 
+Markdown is served when `text/markdown` has a higher q-value than `text/html`. When they tie, a type listed by name beats one only covered by a wildcard, and between two named types the one listed first wins. So `Accept: text/markdown, text/html, */*` and `Accept: */*, text/markdown` get Markdown, while `Accept: text/html, text/markdown` and a bare `Accept: */*` (or `text/*`) get HTML.
+
 ### `.md` URL suffix
 
 Appending `.md` to any permalink returns the same Markdown representation and is a first-class, shareable URL.
