@@ -521,7 +521,7 @@ function renderMarkdownFeed()
                 echo "## Comments\n\n";
                 foreach ($comments as $comment) {
                     echo '**'.$comment->comment_author.'** - '.get_comment_date('c', $comment)."\n\n";
-                    echo \PostContentToMarkdown\contentToMarkdown($comment->comment_content)."\n\n";
+                    echo \PostContentToMarkdown\contentToMarkdown($comment->comment_content, false)."\n\n";
                 }
             }
         }
@@ -581,7 +581,7 @@ function outputSinglePostCommentFeed($post)
         echo "## Comments\n\n";
         foreach ($comments as $comment) {
             echo '**'.$comment->comment_author.'** - '.get_comment_date('c', $comment)."\n\n";
-            echo \PostContentToMarkdown\contentToMarkdown($comment->comment_content)."\n\n";
+            echo \PostContentToMarkdown\contentToMarkdown($comment->comment_content, false)."\n\n";
             echo "---\n\n";
         }
     }
@@ -684,9 +684,12 @@ function clearFeedCache()
  * Converts an HTML string into Markdown using the league/html-to-markdown library.
  *
  * @param  string  $content  The HTML content to convert.
+ * @param  bool  $render  Whether to render blocks and shortcodes before converting.
+ *                        Pass false where core doesn't render them, such as
+ *                        comments.
  * @return string The converted Markdown.
  */
-function contentToMarkdown($content)
+function contentToMarkdown($content, $render = true)
 {
     if (empty(trim($content))) {
         return '';
@@ -696,15 +699,21 @@ function contentToMarkdown($content)
     // so only logged-out conversions, which every visitor shares, are cached.
     $cacheable = ! is_user_logged_in();
 
-    $cache_key = 'md_'.md5($content);
+    $cache_key = 'md_'.($render ? '' : 'raw_').md5($content);
     $cached = $cacheable ? wp_cache_get($cache_key, 'post_content_to_markdown') : false;
     if ($cached !== false) {
         return apply_filters('post_content_to_markdown/markdown_output', $cached, $content);
     }
 
-    // Render dynamic Gutenberg blocks and shortcodes so the HTML is complete before conversion.
-    $rendered = do_blocks($content);
-    $rendered = do_shortcode($rendered);
+    // Render dynamic Gutenberg blocks and shortcodes so the HTML is complete
+    // before conversion, unless the caller opts out for content core doesn't
+    // render them in (e.g. comments, whose authors must not be able to invoke
+    // blocks or shortcodes).
+    $rendered = $content;
+    if ($render) {
+        $rendered = do_blocks($rendered);
+        $rendered = do_shortcode($rendered);
+    }
 
     // Flatten <pre> blocks so syntax-highlighter markup doesn't leak into the code fence.
     $rendered = preg_replace_callback('#<pre\b[^>]*>(.*?)</pre>#is', function ($m) {
