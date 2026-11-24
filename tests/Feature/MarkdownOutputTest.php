@@ -287,3 +287,18 @@ test('markdown feed excludes posts excluded by post_allowed', function () {
         ->and($response['body'])->not->toContain('Hidden Post')
         ->and($response['body'])->not->toContain('HIDDEN-BODY');
 });
+
+test('markdown feed is built with no current user', function () {
+    $cookies = adminCookies();
+
+    makeRequest('/?clear_markdown_feed_cache=1');
+
+    // A logged-in user builds the feed cache first.
+    $member = makeRequest('/feed/markdown/', ['Cookie' => $cookies]);
+    $anonymous = makeRequest('/feed/markdown/');
+
+    expect($member['body'])->toContain('Members Post')
+        ->and($member['body'])->not->toContain('MEMBER-SECRET')
+        ->and($anonymous['body'])->toContain('login required')
+        ->and($anonymous['body'])->not->toContain('MEMBER-SECRET');
+});

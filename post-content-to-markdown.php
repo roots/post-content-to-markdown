@@ -414,6 +414,31 @@ function outputMarkdownFeed()
         exit;
     }
 
+    // The feed is cached and shared by every visitor, so render it with no
+    // current user (user ID 0). Otherwise user-aware shortcodes, blocks, or
+    // post_allowed filters would cache one user's view for everyone.
+    $current_user_id = get_current_user_id();
+    wp_set_current_user(0);
+
+    try {
+        $feed_content = renderMarkdownFeed();
+    } finally {
+        wp_set_current_user($current_user_id);
+    }
+
+    // Cache for 1 hour
+    set_transient($cache_key, $feed_content, apply_filters('post_content_to_markdown/feed_cache_duration', HOUR_IN_SECONDS));
+
+    sendMarkdownHeaders();
+    echo $feed_content;
+    exit;
+}
+
+/**
+ * Render the Markdown feed body
+ */
+function renderMarkdownFeed()
+{
     ob_start();
 
     // Feed header
@@ -504,14 +529,7 @@ function outputMarkdownFeed()
         echo "---\n\n";
     }
 
-    $feed_content = ob_get_clean();
-
-    // Cache for 1 hour
-    set_transient($cache_key, $feed_content, apply_filters('post_content_to_markdown/feed_cache_duration', HOUR_IN_SECONDS));
-
-    sendMarkdownHeaders();
-    echo $feed_content;
-    exit;
+    return ob_get_clean();
 }
 
 /**
@@ -674,8 +692,12 @@ function contentToMarkdown($content)
         return '';
     }
 
+    // Rendering can depend on the current user (e.g. membership shortcodes),
+    // so only logged-out conversions, which every visitor shares, are cached.
+    $cacheable = ! is_user_logged_in();
+
     $cache_key = 'md_'.md5($content);
-    $cached = wp_cache_get($cache_key, 'post_content_to_markdown');
+    $cached = $cacheable ? wp_cache_get($cache_key, 'post_content_to_markdown') : false;
     if ($cached !== false) {
         return apply_filters('post_content_to_markdown/markdown_output', $cached, $content);
     }
@@ -719,12 +741,14 @@ function contentToMarkdown($content)
     // Clean up excessive newlines (more than 2 consecutive)
     $markdown = preg_replace("/\n{3,}/", "\n\n", $markdown);
 
-    wp_cache_set(
-        $cache_key,
-        $markdown,
-        'post_content_to_markdown',
-        apply_filters('post_content_to_markdown/conversion_cache_duration', HOUR_IN_SECONDS)
-    );
+    if ($cacheable) {
+        wp_cache_set(
+            $cache_key,
+            $markdown,
+            'post_content_to_markdown',
+            apply_filters('post_content_to_markdown/conversion_cache_duration', HOUR_IN_SECONDS)
+        );
+    }
 
     return apply_filters('post_content_to_markdown/markdown_output', $markdown, $content);
 }
